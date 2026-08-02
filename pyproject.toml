@@ -1,0 +1,19 @@
+[project]
+name = "latimer-ai-bias"
+version = "0.1.0"
+description = "Backend for bias detection using GSS ground truth and Azure AI."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+[project.dependencies]
+fastapi = "*"
+streamlit = "*"
+uvicorn = { extras = ["standard"], version = "*" }
+pydantic = "*"
+python-dotenv = "*"
+openai = "*"
+anthropic = "*"
+azure-search-documents = "*"
+azure-identity = "*"
+azure-storage-blob = "*"

@@ -1,0 +1,10 @@
+fastapi
+streamlit
+uvicorn[standard]
+pydantic
+python-dotenv
+openai
+anthropic
+azure-search-documents
+azure-identity
+azure-storage-blob

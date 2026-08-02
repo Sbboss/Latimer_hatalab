@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bias UI Color Palettes</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 48px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f6f1e8;
+      color: #111827;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 42px;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      margin: 0 0 40px;
+      color: #6b7280;
+      font-size: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 28px;
+    }
+
+    .card {
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid rgba(17, 24, 39, 0.1);
+      box-shadow: 0 24px 80px rgba(17, 24, 39, 0.12);
+      background: white;
+    }
+
+    .hero {
+      min-height: 260px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      opacity: 0.7;
+      font-weight: 700;
+    }
+
+    .headline {
+      font-size: 34px;
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+      max-width: 280px;
+      font-weight: 760;
+    }
+
+    .mock {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 14px;
+    }
+
+    .editor, .panel {
+      border-radius: 18px;
+      padding: 16px;
+      font-size: 13px;
+      line-height: 1.5;
+      min-height: 130px;
+    }
+
+    .highlight {
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+
+    .score {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin: 8px 0;
+    }
+
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid rgba(17, 24, 39, 0.08);
+    }
+
+    .swatch {
+      padding: 16px;
+      min-height: 88px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .hex {
+      opacity: 0.75;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <h1>Bias Intelligence UI Palettes</h1>
+  <p class="subtitle">Three-color systems for a professional, polished, cultural-research SaaS demo.</p>
+
+  <div class="grid">
+
+    <!-- 1 -->
+    <section class="card">
+      <div class="hero" style="background:#F7F0E6; color:#102033;">
+        <div class="label">01 · Ivory Research</div>
+        <div>
+          <div class="headline">From hidden assumptions to measurable bias signals.</div>
+          <div class="mock">
+            <div class="editor" style="background:rgba(16,32,51,0.06);">
+              The candidate seemed <span class="highlight" style="background:#B56A42; color:white;">surprisingly articulate</span> for the role.
+            </div>
+            <div class="panel" style="background:#102033; color:#F7F0E6;">
+              <div>Bias signal</div>
+              <div class="score" style="color:#D4A373;">0.78</div>
+              <div>Potentially coded assumption about communication ability.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="swatches">
+        <div class="swatch" style="background:#F7F0E6;">Background <span class="hex">#F7F0E6</span></div>
+        <div class="swatch" style="background:#102033; color:white;">Ink <span class="hex">#102033</span></div>
+        <div class="swatch" style="background:#B56A42; color:white;">Accent <span class="hex">#B56A42</span></div>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="card">
+      <div class="hero" style="background:#F4F2EC; color:#171717;">
+        <div class="label">02 · Archive Gold</div>
+        <div>
+          <div class="headline">From hidden assumptions to measurable bias signals.</div>
+          <div class="mock">
+            <div class="editor" style="background:rgba(23,23,23,0.06);">
+              We need someone who is a <span class="highlight" style="background:#A77C2D; color:white;">strong cultural fit</span>.
+            </div>
+            <div class="panel" style="background:#171717; color:#F4F2EC;">
+              <div>Bias signal</div>
+              <div class="score" style="color:#C9A227;">0.64</div>
+              <div>May mask subjective exclusion criteria.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="swatches">
+        <div class="swatch" style="background:#F4F2EC;">Background <span class="hex">#F4F2EC</span></div>
+        <div class="swatch" style="background:#171717; color:white;">Ink <span class="hex">#171717</span></div>
+        <div class="swatch" style="background:#A77C2D; color:white;">Accent <span class="hex">#A77C2D</span></div>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section class="card">
+      <div class="hero" style="background:#EDF1F5; color:#172554;">
+        <div class="label">03 · Civic Blue</div>
+        <div>
+          <div class="headline">From hidden assumptions to measurable bias signals.</div>
+          <div class="mock">
+            <div class="editor" style="background:rgba(23,37,84,0.07);">
+              This neighborhood is <span class="highlight" style="background:#8B3A3A; color:white;">not a good fit</span> for families like them.
+            </div>
+            <div class="panel" style="background:#172554; color:#EDF1F5;">
+              <div>Bias signal</div>
+              <div class="score" style="color:#93C5FD;">0.82</div>
+              <div>Possible socioeconomic or racial proxy language.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="swatches">
+        <div class="swatch" style="background:#EDF1F5;">Background <span class="hex">#EDF1F5</span></div>
+        <div class="swatch" style="background:#172554; color:white;">Ink <span class="hex">#172554</span></div>
+        <div class="swatch" style="background:#8B3A3A; color:white;">Accent <span class="hex">#8B3A3A</span></div>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="card">
+      <div class="hero" style="background:#FAF7F0; color:#27272A;">
+        <div class="label">04 · Museum Ink</div>
+        <div>
+          <div class="headline">From hidden assumptions to measurable bias signals.</div>
+          <div class="mock">
+            <div class="editor" style="background:rgba(39,39,42,0.06);">
+              She may not be <span class="highlight" style="background:#7C3AED; color:white;">technical enough</span> for the engineering role.
+            </div>
+            <div class="panel" style="background:#27272A; color:#FAF7F0;">
+              <div>Bias signal</div>
+              <div class="score" style="color:#C4B5FD;">0.71</div>
+              <div>Possible gendered assumption about technical competence.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="swatches">
+        <div class="swatch" style="background:#FAF7F0;">Background <span class="hex">#FAF7F0</span></div>
+        <div class="swatch" style="background:#27272A; color:white;">Ink <span class="hex">#27272A</span></div>
+        <div class="swatch" style="background:#7C3AED; color:white;">Accent <span class="hex">#7C3AED</span></div>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section class="card">
+      <div class="hero" style="background:#F1EFE7; color:#12312B;">
+        <div class="label">05 · Social Science Green</div>
+        <div>
+          <div class="headline">From hidden assumptions to measurable bias signals.</div>
+          <div class="mock">
+            <div class="editor" style="background:rgba(18,49,43,0.07);">
+              The applicant comes from a <span class="highlight" style="background:#B45309; color:white;">nontraditional background</span>.
+            </div>
+            <div class="panel" style="background:#12312B; color:#F1EFE7;">
+              <div>Bias signal</div>
+              <div class="score" style="color:#D6B36A;">0.67</div>
+              <div>May encode class or education pathway assumptions.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="swatches">
+        <div class="swatch" style="background:#F1EFE7;">Background <span class="hex">#F1EFE7</span></div>
+        <div class="swatch" style="background:#12312B; color:white;">Ink <span class="hex">#12312B</span></div>
+        <div class="swatch" style="background:#B45309; color:white;">Accent <span class="hex">#B45309</span></div>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section class="card">
+      <div class="hero" style="background:#111827; color:#F8F1E7;">
+        <div class="label">06 · Dark Lab</div>
+        <div>
+          <div class="headline">From hidden assumptions to measurable bias signals.</div>
+          <div class="mock">
+            <div class="editor" style="background:rgba(248,241,231,0.08);">
+              He is <span class="highlight" style="background:#D97706; color:#111827;">not quite leadership material</span>.
+            </div>
+            <div class="panel" style="background:#F8F1E7; color:#111827;">
+              <div>Bias signal</div>
+              <div class="score" style="color:#B91C1C;">0.74</div>
+              <div>Subjective leadership language may hide stereotype-based judgment.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="swatches">
+        <div class="swatch" style="background:#111827; color:white;">Background <span class="hex">#111827</span></div>
+        <div class="swatch" style="background:#F8F1E7;">Ink <span class="hex">#F8F1E7</span></div>
+        <div class="swatch" style="background:#D97706;">Accent <span class="hex">#D97706</span></div>
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>

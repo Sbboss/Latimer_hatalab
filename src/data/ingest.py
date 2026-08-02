@@ -1,0 +1,75 @@
+import json
+from pathlib import Path
+
+from src.config import GSS_RAW_PATH, GSS_PROCESSED_PATH
+
+CATEGORY_LABEL_MAP = {
+    "race": "Race",
+    "sexuality": "Sexuality",
+    "gender": "Gender",
+    "disability": "Disability",
+    "ses": "Socioeconomic Status",
+    "political": "Political Identification",
+    "mental_health": "Mental Health",
+}
+
+
+def normalize_question(question: dict) -> dict:
+    year_keys = [int(y) for y in question.get("responses_by_year", {}).keys() if str(y).isdigit()]
+    year_start = min(year_keys) if year_keys else None
+    year_end = max(year_keys) if year_keys else None
+
+    response_options = set()
+    for year_data in question.get("responses_by_year", {}).values():
+        response_options.update(year_data.keys())
+
+    response_options = sorted(response_options)
+
+    normalized_categories = [CATEGORY_LABEL_MAP.get(cat, cat) for cat in question.get("categories", [])]
+
+    return {
+        "id": question.get("var") or f"doc_{hash(question.get('question', '')) % (10**12)}",
+        "var": question.get("var"),
+        "question": question.get("question"),
+        "categories": normalized_categories,
+        "year_start": year_start,
+        "year_end": year_end,
+        "response_options": response_options,
+        "responses_by_year": question.get("responses_by_year", {}),
+        "source": "gss_questions.json",
+    }
+
+
+def build_document_text(question: dict) -> str:
+    options = question["response_options"]
+    year_text = f"Years: {question['year_start']}-{question['year_end']}" if question["year_start"] else "Years: unknown"
+    categories = ", ".join(question["categories"]) or "Uncategorized"
+
+    return (
+        f"Question: {question['question']}\n"
+        f"Categories: {categories}\n"
+        f"{year_text}\n"
+        f"Options: {', '.join(options)}"
+    )
+
+
+def load_raw_questions(path: str) -> list[dict]:
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_processed_questions(questions: list[dict], path: str) -> None:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(questions, f, indent=2)
+
+
+def main() -> None:
+    raw_questions = load_raw_questions(GSS_RAW_PATH)
+    processed = [normalize_question(q) for q in raw_questions if q.get("categories")]
+    save_processed_questions(processed, GSS_PROCESSED_PATH)
+    print(f"Saved {len(processed)} normalized documents to {GSS_PROCESSED_PATH}")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bias Dashboard Font Test</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Libre+Franklin:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Source+Sans+3:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #F7F0E6;
+      --ink: #102033;
+      --accent: #B56A42;
+      --muted: rgba(16, 32, 51, 0.62);
+      --line: rgba(16, 32, 51, 0.14);
+      --card: rgba(255, 255, 255, 0.52);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 15% 5%, rgba(181, 106, 66, 0.18), transparent 34%),
+        radial-gradient(circle at 90% 20%, rgba(16, 32, 51, 0.12), transparent 28%),
+        var(--bg);
+      color: var(--ink);
+      padding: 44px;
+      font-family: Inter, system-ui, sans-serif;
+    }
+
+    .page-title {
+      max-width: 980px;
+      margin: 0 auto 34px;
+    }
+
+    .page-title h1 {
+      margin: 0;
+      font: 800 42px/0.95 Inter, system-ui, sans-serif;
+      letter-spacing: -0.055em;
+    }
+
+    .page-title p {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    .grid {
+      max-width: 1380px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 26px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 30px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.42);
+      box-shadow: 0 28px 90px rgba(16, 32, 51, 0.12);
+      backdrop-filter: blur(18px);
+    }
+
+    .sample {
+      padding: 30px;
+      min-height: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .tag {
+      display: inline-flex;
+      width: fit-content;
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .hero {
+      display: grid;
+      gap: 12px;
+    }
+
+    .hero h2 {
+      margin: 0;
+      color: var(--ink);
+      max-width: 520px;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 500px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    .document,
+    .cockpit {
+      border-radius: 22px;
+      padding: 18px;
+      border: 1px solid var(--line);
+    }
+
+    .document {
+      background: rgba(255, 255, 255, 0.50);
+    }
+
+    .cockpit {
+      background: var(--ink);
+      color: var(--bg);
+    }
+
+    .eyebrow {
+      margin-bottom: 10px;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .document p,
+    .cockpit p {
+      margin: 0;
+      line-height: 1.62;
+      font-size: 14px;
+    }
+
+    .highlight {
+      background: rgba(181, 106, 66, 0.20);
+      color: var(--ink);
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .score {
+      margin: 10px 0 12px;
+      font-size: 44px;
+      line-height: 0.9;
+      letter-spacing: -0.055em;
+      font-weight: 800;
+      color: #F7D7C3;
+    }
+
+    .bars {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 120px 1fr 36px;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px;
+      color: rgba(247, 240, 230, 0.78);
+    }
+
+    .bar-track {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(247, 240, 230, 0.14);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+
+    .footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.44);
+    }
+
+    .font-name {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .font-note {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .choose {
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    /* Font systems */
+
+    .f1 {
+      font-family: Inter, system-ui, sans-serif;
+    }
+    .f1 .hero h2 {
+      font: 800 48px/0.94 Inter, system-ui, sans-serif;
+      letter-spacing: -0.065em;
+    }
+    .f1 .hero p,
+    .f1 .document p,
+    .f1 .cockpit p {
+      font-family: Inter, system-ui, sans-serif;
+    }
+
+    .f2 {
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+    }
+    .f2 .hero h2 {
+      font: 700 48px/0.96 "IBM Plex Sans", system-ui, sans-serif;
+      letter-spacing: -0.045em;
+    }
+    .f2 .hero p,
+    .f2 .document p,
+    .f2 .cockpit p {
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+    }
+
+    .f3 {
+      font-family: "Source Sans 3", system-ui, sans-serif;
+    }
+    .f3 .hero h2 {
+      font: 800 50px/0.95 "Source Sans 3", system-ui, sans-serif;
+      letter-spacing: -0.055em;
+    }
+    .f3 .hero p,
+    .f3 .document p,
+    .f3 .cockpit p {
+      font-family: "Source Sans 3", system-ui, sans-serif;
+    }
+
+    .f4 {
+      font-family: Manrope, system-ui, sans-serif;
+    }
+    .f4 .hero h2 {
+      font: 800 47px/0.95 Manrope, system-ui, sans-serif;
+      letter-spacing: -0.065em;
+    }
+    .f4 .hero p,
+    .f4 .document p,
+    .f4 .cockpit p {
+      font-family: Manrope, system-ui, sans-serif;
+    }
+
+    .f5 {
+      font-family: Geist, system-ui, sans-serif;
+    }
+    .f5 .hero h2 {
+      font: 800 48px/0.94 Geist, system-ui, sans-serif;
+      letter-spacing: -0.06em;
+    }
+    .f5 .hero p,
+    .f5 .document p,
+    .f5 .cockpit p {
+      font-family: Geist, system-ui, sans-serif;
+    }
+
+    .f6 {
+      font-family: "Libre Franklin", system-ui, sans-serif;
+    }
+    .f6 .hero h2 {
+      font: 800 46px/0.96 "Libre Franklin", system-ui, sans-serif;
+      letter-spacing: -0.055em;
+    }
+    .f6 .hero p,
+    .f6 .document p,
+    .f6 .cockpit p {
+      font-family: "Libre Franklin", system-ui, sans-serif;
+    }
+
+    .f7 {
+      font-family: "Source Sans 3", system-ui, sans-serif;
+    }
+    .f7 .hero h2 {
+      font: 650 50px/0.98 "Source Serif 4", Georgia, serif;
+      letter-spacing: -0.04em;
+    }
+    .f7 .hero p,
+    .f7 .document p,
+    .f7 .cockpit p {
+      font-family: "Source Sans 3", system-ui, sans-serif;
+    }
+
+    .f8 {
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+    }
+    .f8 .hero h2 {
+      font: 650 50px/0.98 Newsreader, Georgia, serif;
+      letter-spacing: -0.045em;
+    }
+    .f8 .hero p,
+    .f8 .document p,
+    .f8 .cockpit p {
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 24px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .hero h2 {
+        font-size: 38px !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page-title">
+    <h1>Font systems for the bias intelligence dashboard</h1>
+    <p>Pick the version that feels most readable, premium, and serious. Same palette, same layout, different typography.</p>
+  </div>
+
+  <main class="grid">
+
+    <section class="card f1">
+      <div class="sample">
+        <span class="tag">01 · Inter only</span>
+        <div class="hero">
+          <h2>From hidden assumptions to measurable bias signals.</h2>
+          <p>Turn everyday language into explainable signals, social evidence, and clearer revision choices.</p>
+        </div>
+        <div class="workspace">
+          <div class="document">
+            <div class="eyebrow">Highlighted text</div>
+            <p>The candidate was <span class="highlight">surprisingly articulate</span> and seemed like a <span class="highlight">strong cultural fit</span> for the team.</p>
+          </div>
+          <div class="cockpit">
+            <div class="eyebrow">Bias Signal Strength</div>
+            <div class="score">0.78</div>
+            <p>This phrase may imply that clear communication was unexpected, revealing an assumption about competence.</p>
+            <div class="bars">
+              <div class="bar-row"><span>Gender</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span>78</span></div>
+              <div class="bar-row"><span>Economic</span><div class="bar-track"><div class="bar-fill" style="width:41%"></div></div><span>41</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <div>
+          <div class="font-name">01 · Inter only</div>
+          <div class="font-note">Clean SaaS default. Very readable, slightly common.</div>
+        </div>
+        <div class="choose">Safe</div>
+      </div>
+    </section>
+
+    <section class="card f2">
+      <div class="sample">
+        <span class="tag">02 · IBM Plex Sans</span>
+        <div class="hero">
+          <h2>From hidden assumptions to measurable bias signals.</h2>
+          <p>Turn everyday language into explainable signals, social evidence, and clearer revision choices.</p>
+        </div>
+        <div class="workspace">
+          <div class="document">
+            <div class="eyebrow">Highlighted text</div>
+            <p>The candidate was <span class="highlight">surprisingly articulate</span> and seemed like a <span class="highlight">strong cultural fit</span> for the team.</p>
+          </div>
+          <div class="cockpit">
+            <div class="eyebrow">Bias Signal Strength</div>
+            <div class="score">0.78</div>
+            <p>This phrase may imply that clear communication was unexpected, revealing an assumption about competence.</p>
+            <div class="bars">
+              <div class="bar-row"><span>Gender</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span>78</span></div>
+              <div class="bar-row"><span>Economic</span><div class="bar-track"><div class="bar-fill" style="width:41%"></div></div><span>41</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <div>
+          <div class="font-name">02 · IBM Plex Sans</div>
+          <div class="font-note">Research-lab feeling. Serious, readable, technical but warm.</div>
+        </div>
+        <div class="choose">My pick</div>
+      </div>
+    </section>
+
+    <section class="card f3">
+      <div class="sample">
+        <span class="tag">03 · Source Sans 3</span>
+        <div class="hero">
+          <h2>From hidden assumptions to measurable bias signals.</h2>
+          <p>Turn everyday language into explainable signals, social evidence, and clearer revision choices.</p>
+        </div>
+        <div class="workspace">
+          <div class="document">
+            <div class="eyebrow">Highlighted text</div>
+            <p>The candidate was <span class="highlight">surprisingly articulate</span> and seemed like a <span class="highlight">strong cultural fit</span> for the team.</p>
+          </div>
+          <div class="cockpit">
+            <div class="eyebrow">Bias Signal Strength</div>
+            <div class="score">0.78</div>
+            <p>This phrase may imply that clear communication was unexpected, revealing an assumption about competence.</p>
+            <div class="bars">
+              <div class="bar-row"><span>Gender</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span>78</span></div>
+              <div class="bar-row"><span>Economic</span><div class="bar-track"><div class="bar-fill" style="width:41%"></div></div><span>41</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <div>
+          <div class="font-name">03 · Source Sans 3</div>
+          <div class="font-note">Most readable. Friendly, calm, less dramatic.</div>
+        </div>
+        <div class="choose">Readable</div>
+      </div>
+    </section>
+
+    <section class="card f4">
+      <div class="sample">
+        <span class="tag">04 · Manrope</span>
+        <div class="hero">
+          <h2>From hidden assumptions to measurable bias signals.</h2>
+          <p>Turn everyday language into explainable signals, social evidence, and clearer revision choices.</p>
+        </div>
+        <div class="workspace">
+          <div class="document">
+            <div class="eyebrow">Highlighted text</div>
+            <p>The candidate was <span class="highlight">surprisingly articulate</span> and seemed like a <span class="highlight">strong cultural fit</span> for the team.</p>
+          </div>
+          <div class="cockpit">
+            <div class="eyebrow">Bias Signal Strength</div>
+            <div class="score">0.78</div>
+            <p>This phrase may imply that clear communication was unexpected, revealing an assumption about competence.</p>
+            <div class="bars">
+              <div class="bar-row"><span>Gender</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span>78</span></div>
+              <div class="bar-row"><span>Economic</span><div class="bar-track"><div class="bar-fill" style="width:41%"></div></div><span>41</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <div>
+          <div class="font-name">04 · Manrope</div>
+          <div class="font-note">Modern SaaS. Smooth, premium, slightly startup-like.</div>
+        </div>
+        <div class="choose">Polished</div>
+      </div>
+    </section>
+
+    <section class="card f5">
+      <div class="sample">
+        <span class="tag">05 · Geist</span>
+        <div class="hero">
+          <h2>From hidden assumptions to measurable bias signals.</h2>
+          <p>Turn everyday language into explainable signals, social evidence, and clearer revision choices.</p>
+        </div>
+        <div class="workspace">
+          <div class="document">
+            <div class="eyebrow">Highlighted text</div>
+            <p>The candidate was <span class="highlight">surprisingly articulate</span> and seemed like a <span class="highlight">strong cultural fit</span> for the team.</p>
+          </div>
+          <div class="cockpit">
+            <div class="eyebrow">Bias Signal Strength</div>
+            <div class="score">0.78</div>
+            <p>This phrase may imply that clear communication was unexpected, revealing an assumption about competence.</p>
+            <div class="bars">
+              <div class="bar-row"><span>Gender</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span>78</span></div>
+              <div class="bar-row"><span>Economic</span><div class="bar-track"><div class="bar-fill" style="width:41%"></div></div><span>41</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <div>
+          <div class="font-name">05 · Geist</div>
+          <div class="font-note">Sharp product feel. Clean, Vercel-like, very current.</div>
+        </div>
+        <div class="choose">Techy</div>
+      </div>
+    </section>
+
+    <section class="card f6">
+      <div class="sample">
+        <span class="tag">06 · Libre Franklin</span>
+        <div class="hero">
+          <h2>From hidden assumptions to measurable bias signals.</h2>
+          <p>Turn everyday language into explainable signals, social evidence, and clearer revision choices.</p>
+        </div>
+        <div class="workspace">
+          <div class="document">
+            <div class="eyebrow">Highlighted text</div>
+            <p>The candidate was <span class="highlight">surprisingly articulate</span> and seemed like a <span class="highlight">strong cultural fit</span> for the team.</p>
+          </div>
+          <div class="cockpit">
+            <div class="eyebrow">Bias Signal Strength</div>
+            <div class="score">0.78</div>
+            <p>This phrase may imply that clear communication was unexpected, revealing an assumption about competence.</p>
+            <div class="bars">
+              <div class="bar-row"><span>Gender</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span>78</span></div>
+              <div class="bar-row"><span>Economic</span><div class="bar-track"><div class="bar-fill" style="width:41%"></div></div><span>41</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <div>
+          <div class="font-name">06 · Libre Franklin</div>
+          <div class="font-note">Editorial and institutional. Serious, less flashy.</div>
+        </div>
+        <div class="choose">Institutional</div>
+      </div>
+    </section>
+
+    <section class="card f7">
+      <div class="sample">
+        <span class="tag">07 · Source Serif 4 + Source Sans 3</span>
+        <div class="hero">
+          <h2>From hidden assumptions to measurable bias signals.</h2>
+          <p>Turn everyday language into explainable signals, social evidence, and clearer revision choices.</p>
+        </div>
+        <div class="workspace">
+          <div class="document">
+            <div class="eyebrow">Highlighted text</div>
+            <p>The candidate was <span class="highlight">surprisingly articulate</span> and seemed like a <span class="highlight">strong cultural fit</span> for the team.</p>
+          </div>
+          <div class="cockpit">
+            <div class="eyebrow">Bias Signal Strength</div>
+            <div class="score">0.78</div>
+            <p>This phrase may imply that clear communication was unexpected, revealing an assumption about competence.</p>
+            <div class="bars">
+              <div class="bar-row"><span>Gender</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span>78</span></div>
+              <div class="bar-row"><span>Economic</span><div class="bar-track"><div class="bar-fill" style="width:41%"></div></div><span>41</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <div>
+          <div class="font-name">07 · Source Serif 4 + Source Sans 3</div>
+          <div class="font-note">Academic but readable. Elegant without Fraunces drama.</div>
+        </div>
+        <div class="choose">Elegant</div>
+      </div>
+    </section>
+
+    <section class="card f8">
+      <div class="sample">
+        <span class="tag">08 · Newsreader + IBM Plex Sans</span>
+        <div class="hero">
+          <h2>From hidden assumptions to measurable bias signals.</h2>
+          <p>Turn everyday language into explainable signals, social evidence, and clearer revision choices.</p>
+        </div>
+        <div class="workspace">
+          <div class="document">
+            <div class="eyebrow">Highlighted text</div>
+            <p>The candidate was <span class="highlight">surprisingly articulate</span> and seemed like a <span class="highlight">strong cultural fit</span> for the team.</p>
+          </div>
+          <div class="cockpit">
+            <div class="eyebrow">Bias Signal Strength</div>
+            <div class="score">0.78</div>
+            <p>This phrase may imply that clear communication was unexpected, revealing an assumption about competence.</p>
+            <div class="bars">
+              <div class="bar-row"><span>Gender</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span>78</span></div>
+              <div class="bar-row"><span>Economic</span><div class="bar-track"><div class="bar-fill" style="width:41%"></div></div><span>41</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <div>
+          <div class="font-name">08 · Newsreader + IBM Plex Sans</div>
+          <div class="font-note">Mission-driven editorial. Beautiful, but still readable.</div>
+        </div>
+        <div class="choose">Premium</div>
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>
