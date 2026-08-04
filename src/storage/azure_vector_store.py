@@ -113,7 +113,7 @@ def upload_documents(documents: list[dict]):
     return result
 
 
-def query_vectors(query_embedding: list[float], top_k: int = 5):
+def query_vectors(query_embedding: list[float], query_text: str | None = None, top_k: int = 5):
     client = create_search_client()
     try:
         # Newer SDKs
@@ -130,8 +130,15 @@ def query_vectors(query_embedding: list[float], top_k: int = 5):
             fields="content_vector",
         )
 
+    # Coded/implicit bias phrasing (e.g. "surprisingly articulate given his
+    # background") rarely resembles the literal wording of GSS survey
+    # questions, so pure vector search alone can surface weakly-related
+    # "evidence". Passing the raw query text alongside the vector enables
+    # Azure AI Search's hybrid ranking (BM25 keyword + vector, RRF-fused),
+    # which measurably improves match quality without losing semantic
+    # matches for queries that vector search alone handles well.
     results = client.search(
-        search_text="*",
+        search_text=query_text if query_text else "*",
         vector_queries=[vector_query],
         top=top_k,
         select=["id", "content", "var", "categories", "year_start", "year_end", "response_options", "responses_by_year"],

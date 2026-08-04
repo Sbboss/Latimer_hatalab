@@ -75,7 +75,7 @@ if FRONTEND_DIST_DIR.exists():
 
 class QueryRequest(BaseModel):
     text: str
-    top_k: int = 5
+    top_k: int = 8
     model: str | None = None
 
 
@@ -149,17 +149,18 @@ def bias_query(request: QueryRequest):
 
     client = openai_client()
     embedding = create_embedding(client, request.text)
-    documents = retrieve_top_documents(embedding, top_k=request.top_k)
+    documents = retrieve_top_documents(embedding, query_text=request.text, top_k=request.top_k)
 
     prompt = build_retrieval_prompt(request.text, documents)
-    answer = create_completion(client, prompt, model=request.model)
+    completion = create_completion(client, prompt, model=request.model)
 
     return {
         "query": request.text,
         "top_k": request.top_k,
         "model": request.model,
         "documents": [doc for doc in documents],
-        "response": answer,
+        "response": completion.text,
+        "thinking": completion.thinking,
     }
 
 
@@ -193,7 +194,7 @@ def analyze(request: QueryRequest):
 
     if embedding is None or documents is None:
         embedding = create_embedding(client, text)
-        documents = retrieve_top_documents(embedding, top_k=request.top_k)
+        documents = retrieve_top_documents(embedding, query_text=text, top_k=request.top_k)
         with _retrieval_cache_lock:
             _retrieval_cache[cache_key] = {
                 "embedding": embedding,
@@ -209,11 +210,13 @@ def analyze(request: QueryRequest):
     def run_model(model_name: str):
         model_status = "ok"
         model_error = None
+        thinking_trace = None
         try:
             # Generous budget: reasoning models (e.g. GPT-5.5) spend part of
             # this on internal reasoning tokens before producing the visible
-            # JSON answer, on top of the JSON output itself.
-            raw = create_completion(
+            # JSON answer, on top of the JSON output itself. Claude gets an
+            # extended-thinking scratchpad on top of this budget separately.
+            completion = create_completion(
                 client,
                 prompt,
                 model=model_name,
@@ -221,6 +224,8 @@ def analyze(request: QueryRequest):
                 response_schema=ANALYSIS_OUTPUT_SCHEMA,
                 strict_json=True,
             )
+            raw = completion.text
+            thinking_trace = completion.thinking
         except ModelCompletionError as e:
             print("⚠️ model call failed", model_name, e)
             model_status = "error"
@@ -370,12 +375,14 @@ def analyze(request: QueryRequest):
             "overallScore": bias_score,
             "confidence": 0.72,
             "categories": category_scores,
+            "thinking": thinking_trace,
             "result": {
                 "inputText": text,
                 "overallScore": bias_score,
                 "confidence": 0.72,
                 "signalLabel": "Bias signal detected" if highlights else "No signal",
                 "reasoningSummary": reasoning_summary,
+                "thinking": thinking_trace,
                 "highlights": highlights,
             },
         }
@@ -398,12 +405,14 @@ def analyze(request: QueryRequest):
                     "overallScore": 0.5,
                     "confidence": 0.72,
                     "categories": [],
+                    "thinking": None,
                     "result": {
                         "inputText": text,
                         "overallScore": 0.5,
                         "confidence": 0.72,
                         "signalLabel": "No signal",
                         "reasoningSummary": "Model could not produce an output for this request.",
+                        "thinking": None,
                         "highlights": [],
                     },
                 }

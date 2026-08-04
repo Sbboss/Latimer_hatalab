@@ -43,10 +43,10 @@ def ask_model(model_name: str, prompt: str, max_tokens: int, temperature: float)
 
         # --- RAG retrieval step ---
         embedding = create_embedding(embedding_client, prompt)
-        docs = retrieve_top_documents(embedding, top_k=5)
+        docs = retrieve_top_documents(embedding, query_text=prompt, top_k=8)
         user_prompt = build_retrieval_prompt(prompt, docs)
 
-        answer = create_completion(
+        completion = create_completion(
             client=client,
             prompt=user_prompt,
             max_tokens=max_tokens,
@@ -60,7 +60,7 @@ def ask_model(model_name: str, prompt: str, max_tokens: int, temperature: float)
             deployment=deployment,
             elapsed_seconds=time.perf_counter() - started,
             ok=True,
-            text=answer.strip() or "(empty response)",
+            text=completion.text.strip() or "(empty response)",
         )
     except Exception as exc:
         return ModelResult(
