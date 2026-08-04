@@ -1,22 +1,12 @@
----
-title: Latimer AI Bias
-emoji: ⚖️
-colorFrom: indigo
-colorTo: purple
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 # Latimer AI Bias
 
 Latimer AI Bias is a multi-model bias-analysis application that compares how different LLMs interpret the same text, highlights potentially biased phrasing, and grounds explanations with retrieved General Social Survey (GSS) evidence.
 
 It combines a React frontend, a FastAPI backend, Azure AI Search retrieval, and multiple hosted models so you can inspect where the models agree, where they disagree, and how strongly they score bias signals.
 
-## What The Top Table Is
+## Hugging Face Deployment Metadata
 
-The YAML block at the top of this file is Hugging Face Space metadata. Hugging Face reads it to configure the Space title, emoji, SDK type, and port, and displays it as a table in the Space UI. It is not part of the app logic.
+The Hugging Face Space configuration now lives in `hf_space_metadata.yml` instead of at the top of this README. The sync workflow prepends that metadata only when publishing to Hugging Face, so this GitHub README stays clean and readable.
 
 ## What The App Does
 

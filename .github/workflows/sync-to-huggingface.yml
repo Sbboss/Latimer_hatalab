@@ -15,7 +15,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Push to Hugging Face Space
+      - name: Build HF README and push to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
@@ -25,11 +25,38 @@ jobs:
             exit 1
           fi
 
+          if [ ! -f hf_space_metadata.yml ]; then
+            echo "Missing hf_space_metadata.yml"
+            exit 1
+          fi
+
+          if [ ! -f README.md ]; then
+            echo "Missing README.md"
+            exit 1
+          fi
+
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf "$tmpdir"' EXIT
+
+          git clone . "$tmpdir/repo"
+          cd "$tmpdir/repo"
+
+          python - <<'PY'
+          from pathlib import Path
+          metadata = Path("hf_space_metadata.yml").read_text()
+          readme = Path("README.md").read_text()
+          Path("README.md").write_text(f"{metadata.rstrip()}\n\n{readme.lstrip()}")
+          PY
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git remote remove hf 2>/dev/null || true
           git remote add hf "https://oauth2:${HF_TOKEN}@huggingface.co/spaces/Sbboss/Bias_Detector"
 
-          # GitHub main is the source of truth for the Space.
+          git add README.md hf_space_metadata.yml
+          git commit -m "Prepare Hugging Face README for deploy"
+
+          # GitHub main is the source of truth for the Space, but the README
+          # pushed to HF gets the required YAML header prepended at sync time.
           git push hf HEAD:main --force
