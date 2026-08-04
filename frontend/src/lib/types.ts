@@ -38,6 +38,10 @@ export type AnalysisResult = {
   confidence: number;
   signalLabel: string;
   highlights: Highlight[];
+  // The model's internal reasoning/scratchpad trace (Claude extended
+  // thinking, or an OpenAI reasoning-model summary), when the provider
+  // exposes one. Absent/undefined for models that don't support it.
+  thinking?: string | null;
 };
 
 export type CategoryScore = {
@@ -51,6 +55,7 @@ export type ModelAnalysis = {
   overallScore: number;
   confidence: number;
   categories: CategoryScore[];
+  thinking?: string | null;
 };
 
 export type AnalysisResponse = {

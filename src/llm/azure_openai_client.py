@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any
 
 from openai import OpenAI
@@ -19,6 +20,18 @@ class ModelCompletionError(RuntimeError):
     def __init__(self, message: str, code: str = "completion_failed"):
         super().__init__(message)
         self.code = code
+
+
+@dataclass
+class CompletionResult:
+    """A model's final answer, plus its internal "thinking" trace when the
+    deployment/provider exposes one (Claude extended thinking blocks, or an
+    OpenAI reasoning-model summary). `thinking` is None when the provider
+    doesn't support it or none was returned.
+    """
+
+    text: str
+    thinking: str | None = None
 
 
 def openai_client():
@@ -97,6 +110,44 @@ def _anthropic_is_refusal(message: Any) -> bool:
     return False
 
 
+def _anthropic_thinking_text(message: Any) -> str | None:
+    """Extract Claude's extended-thinking scratchpad text, if present.
+
+    Thinking blocks have a `.thinking` attribute (not `.text`), so they're
+    naturally skipped by `_anthropic_text()`'s content extraction above.
+    """
+    content = getattr(message, "content", None) or []
+    parts: list[str] = []
+    for block in content:
+        block_type = getattr(block, "type", None) or (isinstance(block, dict) and block.get("type"))
+        if block_type != "thinking":
+            continue
+        text = getattr(block, "thinking", None)
+        if text is None and isinstance(block, dict):
+            text = block.get("thinking")
+        if text:
+            parts.append(str(text))
+    return "\n".join(parts) if parts else None
+
+
+def _openai_reasoning_summary(response: Any) -> str | None:
+    """Extract a reasoning model's summarized "thinking" trace from a
+    Responses API result, when the deployment supports `reasoning.summary`
+    and one was actually returned.
+    """
+    parts: list[str] = []
+    for item in getattr(response, "output", []) or []:
+        item_type = getattr(item, "type", None) or (isinstance(item, dict) and item.get("type"))
+        if item_type != "reasoning":
+            continue
+        summary = getattr(item, "summary", None) or (isinstance(item, dict) and item.get("summary")) or []
+        for part in summary:
+            text = getattr(part, "text", None) or (isinstance(part, dict) and part.get("text"))
+            if text:
+                parts.append(str(text))
+    return "\n".join(parts) if parts else None
+
+
 def _openai_response_text(response: Any) -> str | None:
     """Extract text from OpenAI Responses API objects across SDK versions.
 
@@ -145,7 +196,7 @@ def create_completion(
     system_prompt: str | None = None,
     response_schema: dict[str, Any] | None = None,
     strict_json: bool = False,
-) -> str:
+) -> CompletionResult:
     deployment_name = resolve_model_deployment(model)
     provider = resolve_model_provider(model)
 
@@ -154,7 +205,37 @@ def create_completion(
         if system_prompt:
             prompt_text = f"{system_prompt.strip()}\n\n{prompt}"
         messages = [{"role": "user", "content": prompt_text}]
+
+        # Extended thinking gives Claude an explicit scratchpad to reason in
+        # before answering, which improves nuanced judgments like bias
+        # classification. `temperature` must be left at its default (Claude
+        # rejects a custom value while thinking is active) in both styles.
+        # Claude API versions differ on how thinking is configured:
+        #   - newer models (e.g. this Opus 4.8 deployment) use
+        #     `thinking.type: "adaptive"` + a separate `output_config.effort`
+        #     dial, and reject the older explicit-budget style outright.
+        #   - older Claude 3.7+/4 models use `thinking.type: "enabled"` with
+        #     an explicit `budget_tokens`, and `max_tokens` must comfortably
+        #     exceed that budget since both draw from the same output cap.
+        # Try both, then fall back to no thinking at all for deployments that
+        # support neither.
+        thinking_budget = max(1024, min(max_tokens, 8000))
+        thinking_max_tokens = thinking_budget + max_tokens
+
         anthropic_payloads = [
+            {
+                "model": deployment_name,
+                "messages": messages,
+                "max_tokens": max_tokens,
+                "thinking": {"type": "adaptive"},
+                "output_config": {"effort": "medium"},
+            },
+            {
+                "model": deployment_name,
+                "messages": messages,
+                "max_tokens": thinking_max_tokens,
+                "thinking": {"type": "enabled", "budget_tokens": thinking_budget},
+            },
             {"model": deployment_name, "messages": messages, "max_tokens": max_tokens, "temperature": temperature},
             # Some newer Claude deployments reject a custom `temperature`
             # (e.g. "`temperature` is deprecated for this model").
@@ -180,7 +261,7 @@ def create_completion(
                 "not an Azure content filter block).",
                 code="model_refusal",
             )
-        return _anthropic_text(response)
+        return CompletionResult(text=_anthropic_text(response), thinking=_anthropic_thinking_text(response))
 
     messages = []
     if system_prompt:
@@ -193,39 +274,36 @@ def create_completion(
     # "unexpected keyword argument 'messages'" and silently fell through to
     # the legacy Chat Completions payloads below on every call.
     #
-    # Reasoning models (e.g. GPT-5.5) also spend `reasoning_tokens` out of the
-    # same `max_output_tokens` budget used for the visible answer. Without an
-    # explicit low reasoning effort, a small budget (e.g. 1500) can be fully
-    # consumed by internal reasoning, leaving an empty completion with
-    # `finish_reason == "length"`. We prefer a low-effort payload first, and
-    # fall back to payloads without the (possibly unsupported) `reasoning`
-    # field for non-reasoning models/deployments.
-    response_payloads = [
-        {
-            "model": deployment_name,
-            "input": messages,
-            "temperature": temperature,
-            "max_output_tokens": max_tokens,
-            "reasoning": {"effort": "low"},
-        },
-        {
-            "model": deployment_name,
-            "input": messages,
-            "max_output_tokens": max_tokens,
-            "reasoning": {"effort": "low"},
-        },
-        {
-            "model": deployment_name,
-            "input": messages,
-            "temperature": temperature,
-            "max_output_tokens": max_tokens,
-        },
-        {
-            "model": deployment_name,
-            "input": messages,
-            "max_output_tokens": max_tokens,
-        },
+    # Reasoning models (e.g. GPT-5.5) spend `reasoning_tokens` out of the same
+    # `max_output_tokens` budget used for the visible answer, so we try a
+    # "medium" effort first for deeper thinking (paired with `summary: auto`
+    # to capture the actual reasoning trace, not just the model's own
+    # self-reported summary), then degrade through lower effort and finally
+    # no `reasoning` field at all for deployments/models that reject it.
+    reasoning_tiers: list[dict[str, str] | None] = [
+        {"effort": "medium", "summary": "auto"},
+        {"effort": "medium"},
+        {"effort": "low"},
+        None,
     ]
+
+    def _build_response_payloads(schema_format: dict[str, Any] | None) -> list[dict[str, Any]]:
+        payloads = []
+        for reasoning in reasoning_tiers:
+            for use_temperature in (True, False):
+                payload: dict[str, Any] = {
+                    "model": deployment_name,
+                    "input": messages,
+                    "max_output_tokens": max_tokens,
+                }
+                if use_temperature:
+                    payload["temperature"] = temperature
+                if reasoning:
+                    payload["reasoning"] = reasoning
+                if schema_format:
+                    payload["text"] = {"format": schema_format}
+                payloads.append(payload)
+        return payloads
 
     if response_schema:
         json_schema_payload = {
@@ -234,42 +312,16 @@ def create_completion(
             "schema": response_schema,
             "strict": strict_json,
         }
-        response_payloads = [
-            {
-                "model": deployment_name,
-                "input": messages,
-                "temperature": temperature,
-                "max_output_tokens": max_tokens,
-                "text": {"format": json_schema_payload},
-                "reasoning": {"effort": "low"},
-            },
-            {
-                "model": deployment_name,
-                "input": messages,
-                "max_output_tokens": max_tokens,
-                "text": {"format": json_schema_payload},
-                "reasoning": {"effort": "low"},
-            },
-            {
-                "model": deployment_name,
-                "input": messages,
-                "temperature": temperature,
-                "max_output_tokens": max_tokens,
-                "text": {"format": json_schema_payload},
-            },
-            {
-                "model": deployment_name,
-                "input": messages,
-                "max_output_tokens": max_tokens,
-                "text": {"format": json_schema_payload},
-            },
-        ] + response_payloads
+        response_payloads = _build_response_payloads(json_schema_payload) + _build_response_payloads(None)
+    else:
+        response_payloads = _build_response_payloads(None)
+
     for payload in response_payloads:
         try:
             response = client.responses.create(**payload)
             text = _openai_response_text(response)
             if text and text.strip():
-                return text
+                return CompletionResult(text=text, thinking=_openai_reasoning_summary(response))
             # A reasoning model can exhaust its budget on reasoning alone and
             # return no visible text; treat that as a failed attempt so we
             # try the next payload/fallback instead of returning nothing.
@@ -306,7 +358,8 @@ def create_completion(
             response = client.chat.completions.create(**payload)
             text = _openai_chat_text(response)
             if text and text.strip():
-                return text
+                # Chat Completions has no reasoning-summary concept.
+                return CompletionResult(text=text, thinking=None)
             finish_reason = getattr(response.choices[0], "finish_reason", None) if getattr(response, "choices", None) else None
             chat_errors.append(
                 RuntimeError(f"Chat completion returned no usable content (finish_reason={finish_reason})")

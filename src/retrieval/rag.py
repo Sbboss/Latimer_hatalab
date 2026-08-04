@@ -93,7 +93,13 @@ For every detected bias category:
 - Identify trigger words or phrases from the text
 - Explain why they signal bias
 - Provide a concrete neutral replacement for each trigger phrase that can be used directly in the sentence
-- Ground reasoning using the GSS survey evidence provided
+- Ground reasoning using the GSS survey evidence provided. Only claim a direct
+  evidentiary link when a retrieved item genuinely addresses the same topic
+  or demographic axis as the trigger phrase. If the retrieved evidence is
+  only loosely or tangentially related to this specific bias, say so plainly
+  in "grounding" (e.g. "the retrieved GSS items don't directly address this;
+  this judgment is based on documented patterns of coded language rather
+  than a specific survey item") instead of overstating the connection.
 
 Return ONLY valid JSON. Your entire response must be a single JSON object and nothing else.
 Do not include tags, markdown, backticks, apologies, or explanatory text outside the JSON.
@@ -162,5 +168,5 @@ def build_retrieval_prompt(user_text: str, retrieved_docs: List[dict]) -> str:
     )
 
 
-def retrieve_top_documents(query_embedding: list[float], top_k: int = 5):
-    return query_vectors(query_embedding=query_embedding, top_k=top_k)
+def retrieve_top_documents(query_embedding: list[float], query_text: str | None = None, top_k: int = 5):
+    return query_vectors(query_embedding=query_embedding, query_text=query_text, top_k=top_k)
