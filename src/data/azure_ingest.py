@@ -120,6 +120,37 @@ def ingest_documents(documents: list[dict], embedding_batch_size: int) -> int:
     return uploaded
 
 
+def verify_indexed_documents(documents: list[dict]) -> dict[str, int]:
+    """Prove that every expected stable ID can be read back from the index."""
+
+    from src.storage.azure_vector_store import list_indexed_document_ids
+
+    expected_by_survey: dict[str, set[str]] = {}
+    for document in documents:
+        survey = document.get("source_survey") or document.get("source")
+        if not survey:
+            raise ValueError(f"Document {document.get('id')} has no source survey")
+        expected_by_survey.setdefault(str(survey), set()).add(str(document["id"]))
+
+    verified_counts: dict[str, int] = {}
+    for survey, expected_ids in expected_by_survey.items():
+        indexed_ids = list_indexed_document_ids(survey)
+        missing_ids = sorted(expected_ids - indexed_ids)
+        if missing_ids:
+            preview = missing_ids[:20]
+            suffix = "..." if len(missing_ids) > len(preview) else ""
+            raise RuntimeError(
+                f"Azure read-back verification is missing {len(missing_ids)} "
+                f"{survey} documents: {preview}{suffix}"
+            )
+        verified_counts[survey] = len(expected_ids)
+        print(
+            f"Verified {len(expected_ids)} expected {survey} document IDs "
+            "by reading them back from Azure AI Search"
+        )
+    return verified_counts
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -155,7 +186,11 @@ def main() -> None:
         return
 
     uploaded = ingest_documents(documents, args.embedding_batch_size)
-    print(f"Ingested {uploaded} documents into Azure AI Search; survey counts: {surveys}")
+    verified = verify_indexed_documents(documents)
+    print(
+        f"Ingested and verified {uploaded} documents in Azure AI Search; "
+        f"survey counts: {verified}"
+    )
 
 
 if __name__ == "__main__":

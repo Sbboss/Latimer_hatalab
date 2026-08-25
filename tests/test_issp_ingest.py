@@ -1,8 +1,13 @@
 import json
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from src.data.azure_ingest import build_search_document, load_source_documents
+from src.data.azure_ingest import (
+    build_search_document,
+    load_source_documents,
+    verify_indexed_documents,
+)
 from src.data.ingest import build_document_text
 
 
@@ -77,6 +82,17 @@ class ISSPCanonicalCorpusTests(unittest.TestCase):
         text = build_document_text(document)
         self.assertIn("Available waves:", text)
         self.assertNotIn("public support", text.lower())
+
+    @patch("src.storage.azure_vector_store.list_indexed_document_ids")
+    def test_live_verification_requires_every_expected_id(self, list_ids):
+        sample = self.documents[:3]
+        list_ids.return_value = {document["id"] for document in sample}
+
+        self.assertEqual({"ISSP": 3}, verify_indexed_documents(sample))
+
+        list_ids.return_value = {sample[0]["id"]}
+        with self.assertRaisesRegex(RuntimeError, "missing 2 ISSP documents"):
+            verify_indexed_documents(sample)
 
 
 if __name__ == "__main__":

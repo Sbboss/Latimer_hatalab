@@ -250,6 +250,22 @@ def upload_documents(documents: list[dict]):
     return results
 
 
+def list_indexed_document_ids(source_survey: str) -> set[str]:
+    """Read back every indexed ID for one survey for post-upload verification."""
+
+    escaped_source = source_survey.replace("'", "''")
+    results = create_search_client().search(
+        search_text="*",
+        filter=f"source_survey eq '{escaped_source}'",
+        select=["id"],
+    )
+    return {
+        str(result["id"])
+        for result in results
+        if result.get("id") is not None
+    }
+
+
 def _run_search(
     client: SearchClient,
     *,

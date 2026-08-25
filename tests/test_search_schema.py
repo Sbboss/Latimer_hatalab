@@ -1,6 +1,7 @@
 import unittest
+from unittest.mock import MagicMock, patch
 
-from src.storage.azure_vector_store import _index_definition
+from src.storage.azure_vector_store import _index_definition, list_indexed_document_ids
 
 
 class SearchSchemaTests(unittest.TestCase):
@@ -31,6 +32,22 @@ class SearchSchemaTests(unittest.TestCase):
         self.assertEqual(
             semantic.prioritized_fields.title_field.field_name,
             "question_text",
+        )
+
+    @patch("src.storage.azure_vector_store.create_search_client")
+    def test_read_back_collects_all_ids_with_a_source_filter(self, create_client):
+        client = MagicMock()
+        client.search.return_value = iter([{"id": "ISSP_1"}, {"id": "ISSP_2"}])
+        create_client.return_value = client
+
+        self.assertEqual(
+            {"ISSP_1", "ISSP_2"},
+            list_indexed_document_ids("ISSP"),
+        )
+        client.search.assert_called_once_with(
+            search_text="*",
+            filter="source_survey eq 'ISSP'",
+            select=["id"],
         )
 
 

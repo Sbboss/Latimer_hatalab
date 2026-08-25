@@ -157,7 +157,7 @@ With Azure/OpenAI variables configured, incrementally add ISSP documents to the 
 python -m src.data.azure_ingest --source issp
 ```
 
-The operation uses stable `ISSP_...` IDs, adds only backward-compatible metadata fields and a semantic configuration, checks every Azure upload result, and never deletes existing GSS documents. Re-running it safely updates the same ISSP records.
+The operation uses stable `ISSP_...` IDs, adds only backward-compatible metadata fields and a semantic configuration, checks every Azure upload result, reads back all expected IDs after upload, and never deletes existing GSS documents. Re-running it safely updates the same ISSP records.
 
 Regenerate the canonical artifacts from a new tagging export:
 
