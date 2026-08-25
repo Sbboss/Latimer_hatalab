@@ -35,21 +35,16 @@ export function Cockpit({ highlight, models, activeModelIndex, onModelSelect }: 
     );
   }
 
-  // Only show models that flagged an overlapping span of text. Different
-  // models pick different exact substrings for the "same" flagged sentence
-  // (one model highlights the whole sentence, another splits it into
-  // clauses), so we can't require an exact string match here or every
-  // model except the currently active one silently disappears from the
-  // switcher even though it produced a real result.
-  const normalize = (s: string | undefined) => (s ?? "").toLowerCase().trim();
-  const overlaps = (a: string, b: string) =>
-    !!a && !!b && (a.includes(b) || b.includes(a));
-  const targetPhrase = normalize(highlight.phrase);
+  // Show every model that returned a result, not just the ones that
+  // flagged the exact same text as the currently active model. Each model
+  // picks its own highlight boundaries (whole sentence vs. individual
+  // clauses), and clicking a model button switches to that model's own
+  // first highlight (see handleModelSelect in App.tsx), so there's no
+  // reason to filter the switcher by phrase at all -- every model that
+  // ran should always be selectable.
   const modelsWithPhrase = models
     .map((m, idx) => ({ model: m, index: idx }))
-    .filter(({ model }) =>
-      model.result.highlights?.some((h) => overlaps(normalize(h.phrase), targetPhrase))
-    );
+    .filter(({ model }) => (model.result.highlights?.length ?? 0) > 0);
 
   const extractQuestionText = (content: string) => {
     const text = content?.toString() ?? "";
