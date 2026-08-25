@@ -53,6 +53,19 @@ def normalize_question(question: dict) -> dict:
     }
 
 
+
+def _summarize_options(options: list[str], max_items: int = 20, max_chars: int = 1500) -> str:
+    """Cap huge coded-response lists (e.g. 4-digit occupation codes) so embedding text stays under model token limits."""
+    if not options:
+        return "None"
+    truncated = options[:max_items]
+    text = ", ".join(truncated)
+    if len(options) > max_items or len(text) > max_chars:
+        text = text[:max_chars]
+        text += f" ... ({len(options)} total response options, truncated for embedding)"
+    return text
+
+
 def build_document_text(question: dict) -> str:
     options = question["response_options"]
     waves = question.get("available_waves") or []
@@ -79,7 +92,7 @@ def build_document_text(question: dict) -> str:
         f"Categories: {categories}\n"
         f"Module: {module}\n"
         f"{year_text}\n"
-        f"Response scale: {', '.join(options)}\n"
+        f"Response scale: {_summarize_options(options)}\n"
         f"Source dataset: {source_dataset}\n"
         f"{coverage}\n"
         f"Annotation status: {quality}"
