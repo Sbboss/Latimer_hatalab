@@ -35,8 +35,6 @@ export function Cockpit({ highlight, models, activeModelIndex, onModelSelect }: 
     );
   }
 
-  const evidence = highlight.evidence[0];
-
   // Only show models that actually detected this phrase
   const modelsWithPhrase = models
     .map((m, idx) => ({ model: m, index: idx }))
@@ -116,6 +114,14 @@ export function Cockpit({ highlight, models, activeModelIndex, onModelSelect }: 
           </div>
 
           <div className="cockpit-block">
+            <div className="cockpit-h">Pause and reflect</div>
+            <p className="cockpit-text">
+              {highlight.reflectionQuestion ??
+                "What assumption about this person or group might this wording invite?"}
+            </p>
+          </div>
+
+          <div className="cockpit-block">
             <div className="cockpit-h">Suggested rewrite</div>
             <div className="rewrite-row">
               <div className="rewrite-card original">
@@ -142,37 +148,82 @@ export function Cockpit({ highlight, models, activeModelIndex, onModelSelect }: 
             <DimensionsBars dimensions={highlight.dimensions} />
           </div>
 
-          {evidence && (
-            <div className="cockpit-block">
-              <div className="cockpit-h">Social evidence over time</div>
-              <p
+          <div className="cockpit-block" id="evidence">
+            <div className="cockpit-h">Grounded survey questions</div>
+            {!highlight.evidence.length && (
+              <p className="cockpit-text" style={{ marginTop: 12 }}>
+                No retrieved survey question directly matches this bias category.
+                The system is leaving the evidence area empty instead of showing a
+                tangential source.
+              </p>
+            )}
+            {highlight.evidence.map((evidence, index) => (
+              <article
+                key={evidence.recordId ?? `${evidence.question}-${index}`}
                 style={{
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 19,
-                  lineHeight: 1.45,
-                  letterSpacing: "-0.012em",
-                  marginTop: 12,
-                  color: "var(--bg)",
-                  fontWeight: 500,
+                  marginTop: 16,
+                  paddingTop: index ? 18 : 0,
+                  borderTop: index ? "1px solid rgba(247, 240, 230, 0.16)" : "none",
                 }}
               >
-                “{extractQuestionText(evidence.question)}”
-              </p>
-              <div style={{ marginTop: 16 }}>
-                <TimelineChart data={evidence.timeline} height={140} />
-              </div>
-              <p
-                style={{
-                  marginTop: 14,
-                  fontSize: 14,
-                  color: "rgba(247, 240, 230, 0.78)",
-                  lineHeight: 1.55,
-                }}
-              >
-                {evidence.insight}
-              </p>
-            </div>
-          )}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                  <span className="chip chip-ink">
+                    {evidence.survey ?? "Survey"}
+                  </span>
+                  {evidence.module && (
+                    <span className="chip chip-ink">{evidence.module}</span>
+                  )}
+                  {evidence.uncertain && (
+                    <span className="chip chip-ink">Annotation uncertain</span>
+                  )}
+                </div>
+                <p
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 19,
+                    lineHeight: 1.45,
+                    letterSpacing: "-0.012em",
+                    marginTop: 12,
+                    color: "var(--bg)",
+                    fontWeight: 500,
+                  }}
+                >
+                  “{extractQuestionText(evidence.question)}”
+                </p>
+                <p
+                  style={{
+                    marginTop: 9,
+                    fontSize: 13,
+                    color: "rgba(247, 240, 230, 0.72)",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {evidence.availableWaves?.length
+                    ? `Waves: ${evidence.availableWaves.join(", ")}`
+                    : "Waves not supplied"}
+                  {typeof evidence.countryCount === "number"
+                    ? ` · ${evidence.countryCount} countr${evidence.countryCount === 1 ? "y" : "ies"}`
+                    : ""}
+                  {evidence.sourceDataset ? ` · ${evidence.sourceDataset}` : ""}
+                </p>
+                {evidence.timeline.length > 0 && (
+                  <div style={{ marginTop: 16 }}>
+                    <TimelineChart data={evidence.timeline} height={140} />
+                  </div>
+                )}
+                <p
+                  style={{
+                    marginTop: 14,
+                    fontSize: 14,
+                    color: "rgba(247, 240, 230, 0.78)",
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {evidence.insight}
+                </p>
+              </article>
+            ))}
+          </div>
         </div>
       </div>
     </section>

@@ -1,9 +1,6 @@
 from typing import Any, List
 import json
 
-from src.storage.azure_vector_store import query_vectors
-
-
 def _parse_responses_by_year(raw: Any) -> dict[str, dict[str, float]]:
     if not raw:
         return {}
@@ -74,8 +71,10 @@ SYSTEM_BIAS_PROMPT = """
 You are a bias analysis system. Your task is to analyze a user statement and detect
 whether it contains social, political, or demographic bias.
 
-Use the survey evidence provided from the General Social Survey (GSS) to ground
-your reasoning.
+Use the survey-question evidence provided from the General Social Survey (GSS)
+and International Social Survey Programme (ISSP) to ground your reasoning.
+Survey questions reveal what researchers measured; they do not, by themselves,
+prove that the user's wording is biased or reveal what the public believed.
 
 Bias scoring rules:
 - Overall bias score: continuous value between 0 and 1
@@ -93,7 +92,9 @@ For every detected bias category:
 - Identify trigger words or phrases from the text
 - Explain why they signal bias
 - Provide a concrete neutral replacement for each trigger phrase that can be used directly in the sentence
-- Ground reasoning using the GSS survey evidence provided. Only claim a direct
+- Ask one non-accusatory reflection question that helps the user examine the
+  assumption themselves before offering a replacement.
+- Ground reasoning using the GSS/ISSP survey evidence provided. Only claim a direct
   evidentiary link when a retrieved item genuinely addresses the same topic
   or demographic axis as the trigger phrase. If the retrieved evidence is
   only loosely or tangentially related to this specific bias, say so plainly
@@ -115,6 +116,7 @@ The output JSON object must include these fields exactly:
             "category": "string",
             "score": float,
             "strength": "weak|strong",
+            "reflection_question": "a concise, non-accusatory question for the user",
             "trigger_phrases": [
                 {
                     "phrase": "text span",
@@ -142,31 +144,113 @@ Possible bias domains include (not limited to):
 - Sexual orientation
 - Education
 - Age
+- Disability and access
+- Science, technology, and medicine
 
-These represent common axes of societal bias reflected in GSS survey questions.
+These represent common axes of societal bias reflected in GSS and ISSP survey
+questions. Use the category names supported by the evidence when possible.
 """
+
+
+FORMAL_CATEGORY_ALIASES = {
+    "Race and Ethnicity": ("race", "racial", "ethnicity", "ethnic", "nationality", "immigration"),
+    "Gender Expectations": ("gender", "sexism", "sexist", "women", "woman", "men", "man"),
+    "Economic Background (Socioeconomic Status)": (
+        "economic",
+        "socioeconomic",
+        "social class",
+        "income",
+        "wealth",
+    ),
+    "Political Identity": ("political", "politics", "ideology", "partisan", "party affiliation"),
+    "Religion and Belief": ("religion", "religious", "belief", "faith"),
+    "Mental Health": ("mental health", "psychiatric", "psychological"),
+    "Disability and Access": ("disability", "disabled", "accessibility", "access"),
+    "Sexual Orientation": ("sexual orientation", "sexuality", "gay", "lesbian", "homosexual"),
+    "Science, Technology, and Medicine": (
+        "science",
+        "technology",
+        "medicine",
+        "medical",
+        "health care",
+        "healthcare",
+    ),
+}
+
+
+def canonical_category(category: str | None) -> str | None:
+    normalized = (category or "").strip().lower()
+    if not normalized:
+        return None
+    for formal, aliases in FORMAL_CATEGORY_ALIASES.items():
+        if normalized == formal.lower() or any(alias in normalized for alias in aliases):
+            return formal
+    return None
+
+
+def select_evidence_documents(
+    documents: List[dict], category: str | None, limit: int = 3
+) -> List[dict]:
+    """Keep only evidence aligned to the detected category.
+
+    Returning no evidence is more honest than copying unrelated top results
+    onto every highlight in a multi-category passage.
+    """
+
+    if limit <= 0:
+        return []
+    target = canonical_category(category)
+    if target is None:
+        return []
+    matches = []
+    for document in documents:
+        document_categories = {
+            canonical_category(value) or value
+            for value in (document.get("categories") or [])
+        }
+        if target in document_categories:
+            matches.append(document)
+    return matches[:limit]
 
 
 def build_retrieval_prompt(user_text: str, retrieved_docs: List[dict]) -> str:
     context_blocks = []
     for doc in retrieved_docs:
         categories = ", ".join(doc.get("categories", []))
+        source_survey = doc.get("source_survey") or "Unknown survey"
+        question = doc.get("question_text") or doc.get("content") or ""
+        waves = doc.get("available_waves") or []
+        responses = _parse_responses_by_year(doc.get("responses_by_year"))
+        response_note = (
+            "Observed response distributions are present for the listed years."
+            if responses
+            else "No response percentages are present; do not infer an opinion trend from wave coverage."
+        )
         context_blocks.append(
-            f"Question: {doc.get('content')}\n"
+            f"Evidence ID: {doc.get('id')}\n"
+            f"Survey: {source_survey}\n"
+            f"Question: {question}\n"
             f"Categories: {categories}\n"
-            f"Years: {doc.get('year_start')}–{doc.get('year_end')}\n"
-            f"Options: {', '.join(doc.get('response_options', []))}\n"
+            f"Module: {doc.get('module_name') or 'Not specified'}\n"
+            f"Available waves: {', '.join(str(wave) for wave in waves) or 'Not specified'}\n"
+            f"Country coverage count: {doc.get('country_count') or 'Not specified'}\n"
+            f"Source dataset: {doc.get('source_dataset') or 'Not specified'}\n"
+            f"Response scale: {', '.join(doc.get('response_options', []))}\n"
+            f"Annotation status: {doc.get('annotation_status') or 'Not specified'}\n"
+            f"Evidence boundary: {response_note}\n"
         )
 
     context = "\n\n---\n\n".join(context_blocks)
     return (
         f"{SYSTEM_BIAS_PROMPT}\n\n"
         f"Bias category guidance:\n{BIAS_CATEGORY_SUMMARY}\n\n"
-        f"Relevant survey evidence from the GSS knowledge base:\n\n"
+        f"Relevant survey-question evidence from the GSS + ISSP knowledge base:\n\n"
         f"{context}\n\n"
         f"User statement:\n{user_text}"
     )
 
 
 def retrieve_top_documents(query_embedding: list[float], query_text: str | None = None, top_k: int = 5):
+    from src.storage.azure_vector_store import query_vectors
+
     return query_vectors(query_embedding=query_embedding, query_text=query_text, top_k=top_k)

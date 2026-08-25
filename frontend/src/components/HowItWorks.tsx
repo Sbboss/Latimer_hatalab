@@ -7,17 +7,17 @@ const steps = [
   {
     n: "02",
     title: "Compare against social context",
-    text: "Each phrase is grounded against five decades of GSS public-attitude data so signals reflect how people have actually responded over time.",
+    text: "Hybrid search matches each phrase to relevant GSS and ISSP questions, with survey, module, wave, and quality metadata kept visible.",
   },
   {
     n: "03",
-    title: "Explain the bias signals",
-    text: "Every highlight ships with a category, dimensions, a confidence, and a clear human-readable explanation — never raw model output.",
+    title: "Invite reflection",
+    text: "Every highlight explains the signal and asks a non-accusatory question that helps you examine the assumption yourself.",
   },
   {
     n: "04",
-    title: "Suggest less biased language",
-    text: "Each signal includes a softer rewrite that names the actual observation while removing the implied expectation gap.",
+    title: "Offer a concrete next step",
+    text: "A specific rewrite is available after the explanation, so the tool supports action without replacing the learning process.",
   },
 ];
 
@@ -30,9 +30,9 @@ export function HowItWorks() {
           Built like a research instrument, used like a writing tool.
         </h2>
         <p className="section-lede">
-          Bias Intelligence is not a grammar checker. It is a measurement
-          surface — every signal is structured, explainable, and grounded in
-          public-attitude data.
+          Bias Intelligence is not a grammar checker. It is a learning surface:
+          every signal is structured, explainable, and connected to attributable
+          social-survey questions.
         </p>
 
         <div className="how-grid">

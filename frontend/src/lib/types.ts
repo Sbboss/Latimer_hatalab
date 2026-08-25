@@ -7,10 +7,19 @@ export type TimelinePoint = {
 };
 
 export type EvidenceQuestion = {
+  recordId?: string;
   question: string;
   category: string; // human-facing label only
   insight: string;
   timeline: TimelinePoint[];
+  survey?: string;
+  module?: string | null;
+  sourceDataset?: string | null;
+  availableWaves?: string[];
+  countryCount?: number | null;
+  annotationStatus?: string | null;
+  uncertain?: boolean;
+  limitations?: string | null;
 };
 
 export type Dimension = {
@@ -27,6 +36,7 @@ export type Highlight = {
   score: number;
   explanation: string;
   replacement: string;
+  reflectionQuestion?: string;
   rewriteReason: string;
   dimensions: Dimension[];
   evidence: EvidenceQuestion[];

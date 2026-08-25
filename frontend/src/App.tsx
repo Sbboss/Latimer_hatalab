@@ -120,6 +120,14 @@ export default function App() {
       }
       setApiSource(source);
       setMode("analyzed");
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          cockpitRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        });
+      });
     } finally {
       setIsAnalyzing(false);
     }

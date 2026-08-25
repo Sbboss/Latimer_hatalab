@@ -51,12 +51,12 @@ export function Hero({ onAnalyze, onExploreEvidence }: Props) {
 
           <div className="hero-meta">
             <div>
-              <strong>8 dimensions</strong>
+              <strong>9 tagged dimensions</strong>
               <div>Race · Gender · Class · Sexuality · …</div>
             </div>
             <div>
-              <strong>50+ years</strong>
-              <div>of public-attitude grounding</div>
+              <strong>GSS + ISSP</strong>
+              <div>attributable survey-question grounding</div>
             </div>
             <div>
               <strong>Structured signals</strong>
@@ -115,7 +115,7 @@ export function Hero({ onAnalyze, onExploreEvidence }: Props) {
                 marginBottom: 8,
               }}
             >
-              Public attitude · Women in leadership
+              GSS response trend · Women in leadership
             </div>
             <TimelineChart data={previewTimeline} height={92} />
           </div>

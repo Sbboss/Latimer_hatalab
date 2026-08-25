@@ -21,6 +21,8 @@ const extractQuestionText = (content: string) => {
 };
 
 export function SocialEvidence({ evidence }: Props) {
+  const evidenceItems = evidence ?? featuredEvidence;
+
   return (
     <section className="section" id="evidence">
       <div className="container">
@@ -36,18 +38,30 @@ export function SocialEvidence({ evidence }: Props) {
           <div>
             <span className="section-eyebrow">02 · Social evidence</span>
             <h2 className="section-heading">
-              Five decades of public attitudes, behind every signal.
+              Survey questions behind each signal.
             </h2>
           </div>
           <p className="section-lede" style={{ marginTop: 0, maxWidth: 420 }}>
-            Each detection is grounded in real survey questions about how
-            Americans have answered, year after year. Bias signals carry the
-            weight of evidence, not opinion.
+            Retrieved GSS and ISSP questions show what researchers measured,
+            where, and when. A trend appears only when actual response
+            percentages are available.
           </p>
         </div>
 
         <div className="evidence-grid">
-          {(evidence && evidence.length > 0 ? evidence : featuredEvidence).map((ev, index) => {
+          {evidenceItems.length === 0 && (
+            <article className="evidence-card card">
+              <span className="chip chip-accent">Evidence boundary</span>
+              <h3 className="evidence-q">
+                No directly aligned survey question was retrieved.
+              </h3>
+              <p className="evidence-insight">
+                The app leaves this section empty rather than presenting a
+                tangential question as support.
+              </p>
+            </article>
+          )}
+          {evidenceItems.map((ev, index) => {
             const timeline = ev.timeline ?? [];
             const hasTimeline = timeline.length > 0;
             const first = timeline[0]!;
@@ -58,11 +72,17 @@ export function SocialEvidence({ evidence }: Props) {
               <article className="evidence-card card" key={`${ev.question}-${index}`}>
                 <div className="evidence-meta">
                   <div className="evidence-meta-tags">
-                    <span className="chip chip-accent">Question {index + 1}</span>
+                    <span className="chip chip-accent">
+                      {ev.survey ?? `Question ${index + 1}`}
+                    </span>
                     <span className="chip chip-accent">{ev.category}</span>
                   </div>
                   <span className="evidence-meta-date">
-                    {hasTimeline ? `${first.year}–${last.year}` : "Trend unknown"}
+                    {hasTimeline
+                      ? `${first.year}–${last.year}`
+                      : ev.availableWaves?.length
+                      ? `${ev.availableWaves[0]}–${ev.availableWaves[ev.availableWaves.length - 1]}`
+                      : "Waves unavailable"}
                   </span>
                 </div>
 
@@ -72,15 +92,21 @@ export function SocialEvidence({ evidence }: Props) {
                   {hasTimeline ? (
                     <TimelineChart data={timeline} height={130} showAxis={false} />
                   ) : (
-                    <div className="evidence-chart-empty">Trend data unavailable</div>
+                    <div className="evidence-chart-empty">
+                      Question coverage only · no response trend in this record
+                    </div>
                   )}
                 </div>
 
                 <p className="evidence-insight">{ev.insight}</p>
 
                 <div className="evidence-foot">
-                  <span>Public support</span>
-                  <span>{deltaDisplay} pts</span>
+                  <span>{hasTimeline ? "Observed response change" : "Question coverage"}</span>
+                  <span>
+                    {hasTimeline
+                      ? `${deltaDisplay} pts`
+                      : `${ev.availableWaves?.length ?? 0} waves`}
+                  </span>
                 </div>
               </article>
             );

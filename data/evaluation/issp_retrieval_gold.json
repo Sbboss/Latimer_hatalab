@@ -1,0 +1,82 @@
+[
+  {
+    "query": "Mothers with full-time jobs make young children suffer",
+    "relevant_ids": ["ISSP_FCGR_V2", "ISSP_FCGR_V3"]
+  },
+  {
+    "query": "A woman's job is staying home and a man's job is earning money",
+    "relevant_ids": ["ISSP_FCGR_V8"]
+  },
+  {
+    "query": "Gay and lesbian couples should not be allowed to raise children",
+    "relevant_ids": ["ISSP_FCGR_V25", "ISSP_FCGR_V26"]
+  },
+  {
+    "query": "Sexual relations between adults of the same sex are immoral",
+    "relevant_ids": ["ISSP_REL_V6"]
+  },
+  {
+    "query": "Immigrants steal jobs and increase crime",
+    "relevant_ids": ["ISSP_NATID_V42", "ISSP_NATID_V44"]
+  },
+  {
+    "query": "Immigrants should not have the same legal rights as citizens",
+    "relevant_ids": ["ISSP_NATID_V46", "ISSP_NATID_V47"]
+  },
+  {
+    "query": "A person's race determines whether they can get ahead",
+    "relevant_ids": ["ISSP_SOINQ_V9"]
+  },
+  {
+    "query": "It is fair that rich people can buy better health care",
+    "relevant_ids": ["ISSP_SOINQ_V37"]
+  },
+  {
+    "query": "Government should not reduce the income gap between rich and poor",
+    "relevant_ids": ["ISSP_ENV_V2", "ISSP_REL_V3", "ISSP_ROG_V56", "ISSP_SOINQ_V26", "ISSP_SOINQ_V27"]
+  },
+  {
+    "query": "People with chronic illnesses and disabilities have poor health status",
+    "relevant_ids": ["ISSP_HEALTH_V36", "ISSP_HEALTH_V37"]
+  },
+  {
+    "query": "Feeling depressed is simply being unhappy",
+    "relevant_ids": ["ISSP_HEALTH_V20"]
+  },
+  {
+    "query": "Religious people are too intolerant",
+    "relevant_ids": ["ISSP_REL_V65"]
+  },
+  {
+    "query": "Religious leaders should influence how people vote and how government acts",
+    "relevant_ids": ["ISSP_REL_V18", "ISSP_REL_V19"]
+  },
+  {
+    "query": "Computers are a threat to privacy",
+    "relevant_ids": ["ISSP_ROG_V24"]
+  },
+  {
+    "query": "Government has no responsibility to provide health care for sick people",
+    "relevant_ids": ["ISSP_ROG_V52", "ISSP_ROG_V76"]
+  },
+  {
+    "query": "Government should not provide a living standard for older people",
+    "relevant_ids": ["ISSP_ROG_V53", "ISSP_ROG_V77"]
+  },
+  {
+    "query": "Modern science does more harm than good",
+    "relevant_ids": ["ISSP_ENV_V10", "ISSP_REL_V62"]
+  },
+  {
+    "query": "Poverty is the main cause of health problems",
+    "relevant_ids": ["ISSP_HEALTH_V13"]
+  },
+  {
+    "query": "Economic growth matters more than protecting the environment",
+    "relevant_ids": ["ISSP_ENV_V15", "ISSP_ENV_V17", "ISSP_ENV_V25"]
+  },
+  {
+    "query": "Poorer countries should make less effort to protect the environment",
+    "relevant_ids": ["ISSP_ENV_V48"]
+  }
+]

@@ -36,20 +36,53 @@ def normalize_question(question: dict) -> dict:
         "year_end": year_end,
         "response_options": response_options,
         "responses_by_year": question.get("responses_by_year", {}),
-        "source": "gss_questions.json",
+        "source": "GSS",
+        "source_survey": "GSS",
+        "module_name": "",
+        "source_question": question.get("var"),
+        "source_dataset": "General Social Survey",
+        "available_waves": [str(year) for year in sorted(year_keys)],
+        "countries": ["US-United States"],
+        "country_count": 1,
+        "wave_count": len(year_keys),
+        "cross_wave_question_available": len(year_keys) > 1,
+        "limitations": "GSS response distributions are United States public-opinion data.",
+        "annotation_status": "not_applicable",
+        "annotation_uncertain": False,
+        "annotation_notes": "",
     }
 
 
 def build_document_text(question: dict) -> str:
     options = question["response_options"]
-    year_text = f"Years: {question['year_start']}-{question['year_end']}" if question["year_start"] else "Years: unknown"
+    waves = question.get("available_waves") or []
+    year_text = (
+        f"Available waves: {', '.join(str(wave) for wave in waves)}"
+        if waves
+        else (
+            f"Years: {question['year_start']}-{question['year_end']}"
+            if question["year_start"]
+            else "Years: unknown"
+        )
+    )
     categories = ", ".join(question["categories"]) or "Uncategorized"
+    source_survey = question.get("source_survey") or question.get("source") or "Unknown"
+    module = question.get("module_name") or "Not specified"
+    source_dataset = question.get("source_dataset") or "Not specified"
+    country_count = question.get("country_count")
+    coverage = f"Country coverage: {country_count}" if country_count is not None else "Country coverage: unknown"
+    quality = question.get("annotation_status") or "unknown"
 
     return (
+        f"Survey: {source_survey}\n"
         f"Question: {question['question']}\n"
         f"Categories: {categories}\n"
+        f"Module: {module}\n"
         f"{year_text}\n"
-        f"Options: {', '.join(options)}"
+        f"Response scale: {', '.join(options)}\n"
+        f"Source dataset: {source_dataset}\n"
+        f"{coverage}\n"
+        f"Annotation status: {quality}"
     )
 
 

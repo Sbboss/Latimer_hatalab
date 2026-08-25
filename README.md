@@ -1,6 +1,6 @@
 # Latimer AI Bias
 
-Latimer AI Bias is a multi-model bias-analysis application that compares how different LLMs interpret the same text, highlights potentially biased phrasing, and grounds explanations with retrieved General Social Survey (GSS) evidence.
+Latimer AI Bias is a multi-model learning application that helps people notice and examine possible bias in their own language. It compares how different LLMs interpret the same text and grounds explanations in attributable General Social Survey (GSS) and International Social Survey Programme (ISSP) questions.
 
 It combines a React frontend, a FastAPI backend, Azure AI Search retrieval, and multiple hosted models so you can inspect where the models agree, where they disagree, and how strongly they score bias signals.
 
@@ -13,8 +13,10 @@ The Hugging Face Space configuration now lives in `hf_space_metadata.yml` instea
 - Runs the same input across multiple models
 - Produces a structured bias score and category breakdown for each model
 - Highlights trigger phrases directly in the input text
+- Asks a non-accusatory reflection question before suggesting a rewrite
 - Suggests more neutral rewrites
-- Retrieves related GSS survey items through Azure AI Search
+- Retrieves category-aligned GSS and ISSP survey items through Azure AI Search
+- Shows survey, module, wave, country coverage, and annotation-quality metadata
 - Shows where models agree and where they disagree
 
 ## Configured Models
@@ -34,7 +36,8 @@ The frontend reads model names dynamically from the backend, so the UI stays ali
 Input text
   -> Embedding with Azure OpenAI
   -> Hybrid retrieval from Azure AI Search
-  -> RAG prompt assembly with GSS evidence
+  -> Optional semantic reranking with safe hybrid fallback
+  -> RAG prompt assembly with GSS + ISSP evidence boundaries
   -> Parallel analysis across all configured models
   -> Structured JSON output
   -> Frontend comparison view with scores, highlights, and reasoning
@@ -45,6 +48,9 @@ Input text
 ```text
 latimer-ai-bias/
 ├── frontend/                 React + Vite app
+├── data/
+│   ├── issp/                 canonical tagged ISSP corpus + validation report
+│   └── evaluation/           retrieval gold queries
 ├── src/
 │   ├── api/                  FastAPI endpoints
 │   ├── data/                 ingestion and normalization scripts
@@ -79,6 +85,7 @@ AZURE_MODEL_DEPLOYMENTS_JSON={"DeepSeek-V4-Pro":"DeepSeek-V4-Pro","GPT-5.5":"gpt
 AZURE_COGNITIVE_SEARCH_ENDPOINT=...
 AZURE_COGNITIVE_SEARCH_API_KEY=...
 AZURE_OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+AZURE_COGNITIVE_SEARCH_SEMANTIC_ENABLED=true
 ```
 
 If you are using Claude through Azure Foundry, also set:
@@ -134,6 +141,30 @@ The frontend proxies API requests to the backend on port `8001`.
 streamlit run streamlit_app.py
 ```
 
+## ISSP Data And Ingestion
+
+The tracked canonical corpus contains all 532 supplied ISSP questions. It keeps formal multi-label tags and explicit states for uncertain, unlabeled, and unannotated records, while excluding annotator identities. The original ZIP remains outside the repository.
+
+Validate the deployment payload without cloud access:
+
+```bash
+python -m src.data.azure_ingest --source issp --dry-run
+```
+
+With Azure/OpenAI variables configured, incrementally add ISSP documents to the existing index:
+
+```bash
+python -m src.data.azure_ingest --source issp
+```
+
+The operation uses stable `ISSP_...` IDs, adds only backward-compatible metadata fields and a semantic configuration, checks every Azure upload result, and never deletes existing GSS documents. Re-running it safely updates the same ISSP records.
+
+Regenerate the canonical artifacts from a new tagging export:
+
+```bash
+python -m src.data.issp_ingest --zip "/path/to/ISSP Tagged.zip"
+```
+
 ## API Endpoints
 
 Important backend endpoints:
@@ -148,12 +179,14 @@ Important backend endpoints:
 
 ## Retrieval And Grounding Notes
 
-The system uses GSS-derived survey content stored in Azure AI Search. Retrieval is hybrid:
+The system uses GSS- and ISSP-derived survey content in one Azure AI Search index. Retrieval is hybrid:
 
 - vector similarity from the input embedding
 - keyword ranking from the raw query text
 
-This improves matching for direct bias statements and for more coded phrasing. When the retrieved GSS evidence is only loosely related, the prompt now instructs models to say so explicitly instead of overstating the grounding connection.
+Azure's reciprocal-rank fusion combines both result lists. When enabled and supported by the service, semantic ranking reranks 50 candidates; any semantic-service error falls back to the existing hybrid query. Evidence is then aligned to each detected category instead of copying the same top results to every highlight. When no direct match exists, the UI says so rather than presenting tangential evidence.
+
+ISSP records in this export contain question wording and wave/country coverage, not response percentages. The prompt and UI explicitly prevent wave availability from being presented as an opinion trend.
 
 ## Reasoning / Thinking Support
 
@@ -168,17 +201,26 @@ If a deployment does not expose a usable reasoning trace, the analysis still ret
 
 - `test_case.md` contains seven sample passages
 - `test_case_results.md` contains a comparison report across all four configured models
+- `data/evaluation/issp_retrieval_gold.json` contains 20 paraphrased ISSP retrieval judgments
 
 These are useful for sanity-checking how consistently the models classify historical text, partisan rhetoric, ethnocentric language, and ambiguous philosophical passages.
+
+Run the dependency-free lexical retrieval baseline:
+
+```bash
+python -m src.retrieval.evaluate --mode lexical --top-k 5
+```
+
+After ingestion, run the actual Azure hybrid/semantic path with `--mode live`. Both modes report Recall@k, MRR, and nDCG@k.
 
 ## Current Limitations
 
 - Indirect or coded bias language can still be harder to ground than direct survey-matched language
 - Some models are stricter than others about what counts as political or demographic bias
 - Reasoning trace availability depends on the provider and deployment capabilities
-- Retrieval quality depends heavily on the coverage and wording of the indexed GSS material
+- Retrieval quality depends on the coverage and annotation quality of both surveys; rare ISSP labels and uncertain rows remain visibly flagged
+- ISSP opinion trends require a separate response dataset; this export supports question retrieval and coverage only
 
 ## License
 
 Research / academic use.
-

@@ -68,9 +68,21 @@ def resolve_model_provider(model: str | None = None) -> str:
     return "openai"
 
 
+def create_embeddings(client, texts: list[str]) -> list[list[float]]:
+    """Create embeddings in one provider call while preserving input order."""
+    if not texts:
+        return []
+    result = client.embeddings.create(model=AZURE_OPENAI_EMBEDDING_MODEL, input=texts)
+    ordered = sorted(result.data, key=lambda item: item.index)
+    if len(ordered) != len(texts):
+        raise RuntimeError(
+            f"Embedding provider returned {len(ordered)} vectors for {len(texts)} inputs"
+        )
+    return [item.embedding for item in ordered]
+
+
 def create_embedding(client, text: str) -> list[float]:
-    result = client.embeddings.create(model=AZURE_OPENAI_EMBEDDING_MODEL, input=text)
-    return result.data[0].embedding
+    return create_embeddings(client, [text])[0]
 
 
 def _anthropic_text(message: Any) -> str:
@@ -306,10 +318,18 @@ def create_completion(
         return payloads
 
     if response_schema:
+        # `name` belongs to the Responses API format wrapper, not to the JSON
+        # Schema document itself.  Keeping it in `schema` makes strict mode
+        # reject an otherwise valid schema before the model is called.
+        schema_document = {
+            key: value
+            for key, value in response_schema.items()
+            if key != "name"
+        }
         json_schema_payload = {
             "type": "json_schema",
             "name": response_schema.get("name", "analysis_output"),
-            "schema": response_schema,
+            "schema": schema_document,
             "strict": strict_json,
         }
         response_payloads = _build_response_payloads(json_schema_payload) + _build_response_payloads(None)

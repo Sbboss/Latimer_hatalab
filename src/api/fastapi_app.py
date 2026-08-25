@@ -11,7 +11,12 @@ from src.llm.azure_openai_client import (
     openai_client,
 )
 from src.config import AZURE_MODEL_DEPLOYMENTS, AZURE_DEFAULT_MODEL
-from src.retrieval.rag import build_retrieval_prompt, retrieve_top_documents, extract_timeline_from_document
+from src.retrieval.rag import (
+    build_retrieval_prompt,
+    extract_timeline_from_document,
+    retrieve_top_documents,
+    select_evidence_documents,
+)
 import re
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -32,6 +37,7 @@ ANALYSIS_OUTPUT_SCHEMA = {
     "additionalProperties": False,
     "properties": {
         "overall_bias_score": {"type": "number"},
+        "bias_detected": {"type": "boolean"},
         "reasoning_summary": {"type": "string"},
         "categories": {
             "type": "array",
@@ -41,6 +47,8 @@ ANALYSIS_OUTPUT_SCHEMA = {
                 "properties": {
                     "category": {"type": "string"},
                     "score": {"type": "number"},
+                    "strength": {"type": "string", "enum": ["weak", "strong"]},
+                    "reflection_question": {"type": "string"},
                     "grounding": {"type": "string"},
                     "trigger_phrases": {
                         "type": "array",
@@ -61,11 +69,23 @@ ANALYSIS_OUTPUT_SCHEMA = {
                         },
                     },
                 },
-                "required": ["category", "score", "grounding", "trigger_phrases"],
+                "required": [
+                    "category",
+                    "score",
+                    "strength",
+                    "reflection_question",
+                    "grounding",
+                    "trigger_phrases",
+                ],
             },
         },
     },
-    "required": ["overall_bias_score", "reasoning_summary", "categories"],
+    "required": [
+        "overall_bias_score",
+        "bias_detected",
+        "reasoning_summary",
+        "categories",
+    ],
 }
 
 FRONTEND_DIST_DIR = Path("frontend_dist")
@@ -77,6 +97,59 @@ class QueryRequest(BaseModel):
     text: str
     top_k: int = 8
     model: str | None = None
+
+
+def _plain_question_text(document: dict) -> str:
+    question = (document.get("question_text") or "").strip()
+    if question:
+        return question
+    content = str(document.get("content") or "")
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.lower().startswith("question:"):
+            return stripped.split(":", 1)[1].strip()
+    return content.splitlines()[0].strip() if content.splitlines() else ""
+
+
+def _document_to_evidence(document: dict) -> dict:
+    source_survey = document.get("source_survey") or (
+        "ISSP" if str(document.get("id")).startswith("ISSP_") else "GSS"
+    )
+    timeline = extract_timeline_from_document(document)
+    waves = document.get("available_waves") or []
+    if not waves and document.get("year_start") is not None:
+        start = document.get("year_start")
+        end = document.get("year_end")
+        waves = [str(start)] if start == end else [str(start), str(end)]
+
+    if timeline:
+        insight = (
+            f"{source_survey} response distributions are available for this question. "
+            "The chart reports the selected response option, not a model estimate."
+        )
+    else:
+        wave_text = f" across {len(waves)} listed waves" if waves else ""
+        insight = (
+            f"This {source_survey} question is available{wave_text}. "
+            "This record contains question metadata, not response percentages, "
+            "so it does not establish an opinion trend."
+        )
+
+    return {
+        "recordId": document.get("id"),
+        "question": _plain_question_text(document),
+        "category": ", ".join(document.get("categories") or []),
+        "insight": insight,
+        "timeline": timeline,
+        "survey": source_survey,
+        "module": document.get("module_name"),
+        "sourceDataset": document.get("source_dataset"),
+        "availableWaves": [str(wave) for wave in waves],
+        "countryCount": document.get("country_count"),
+        "annotationStatus": document.get("annotation_status"),
+        "uncertain": bool(document.get("annotation_uncertain")),
+        "limitations": document.get("limitations"),
+    }
 
 
 @app.get("/health")
@@ -331,6 +404,8 @@ def analyze(request: QueryRequest):
             cat_label = cat.get("category", "Bias")
             cat_score = float(cat.get("score", bias_score))
             category_scores.append({"category": cat_label, "score": cat_score})
+            evidence_documents = select_evidence_documents(documents, cat_label, limit=3)
+            evidence = [_document_to_evidence(document) for document in evidence_documents]
 
             triggers = cat.get("trigger_phrases", [])
 
@@ -352,19 +427,13 @@ def analyze(request: QueryRequest):
                             "score": cat_score,
                             "explanation": explanation,
                             "replacement": replacement,
+                            "reflectionQuestion": cat.get("reflection_question", "").strip()
+                            or "What assumption about this person or group might this wording invite?",
                             "rewriteReason": cat.get("grounding", reasoning_summary),
                             "dimensions": [
                                 {"label": cat_label, "score": cat_score},
                             ],
-                            "evidence": [
-                                {
-                                    "question": d.get("content", ""),
-                                    "category": ", ".join(d.get("categories", [])),
-                                    "insight": "Derived from GSS survey evidence retrieved via vector search.",
-                                    "timeline": extract_timeline_from_document(d)
-                                }
-                                for d in documents[:2]
-                            ],
+                            "evidence": evidence,
                         }
                     )
 
