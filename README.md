@@ -64,6 +64,12 @@ latimer-ai-bias/
 └── pyproject.toml
 ```
 
+## Repository Language
+
+All tracked source code, data, documentation, filenames, and commit messages
+must remain in English. The automated test suite scans every tracked UTF-8 text
+file and filename for Han ideographs so CI rejects accidental violations.
+
 ## Environment Setup
 
 Create a local environment file:
