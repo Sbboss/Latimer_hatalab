@@ -68,7 +68,7 @@ latimer-ai-bias/
 
 All tracked source code, data, documentation, filenames, and commit messages
 must remain in English. The automated test suite scans every tracked UTF-8 text
-file and filename for Han ideographs so CI rejects accidental violations.
+file and filename for CJK characters so CI rejects accidental violations.
 
 ## Environment Setup
 
