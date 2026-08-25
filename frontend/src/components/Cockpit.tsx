@@ -35,13 +35,20 @@ export function Cockpit({ highlight, models, activeModelIndex, onModelSelect }: 
     );
   }
 
-  // Only show models that actually detected this phrase
+  // Only show models that flagged an overlapping span of text. Different
+  // models pick different exact substrings for the "same" flagged sentence
+  // (one model highlights the whole sentence, another splits it into
+  // clauses), so we can't require an exact string match here or every
+  // model except the currently active one silently disappears from the
+  // switcher even though it produced a real result.
+  const normalize = (s: string | undefined) => (s ?? "").toLowerCase().trim();
+  const overlaps = (a: string, b: string) =>
+    !!a && !!b && (a.includes(b) || b.includes(a));
+  const targetPhrase = normalize(highlight.phrase);
   const modelsWithPhrase = models
     .map((m, idx) => ({ model: m, index: idx }))
     .filter(({ model }) =>
-      model.result.highlights?.some((h) =>
-        h.phrase?.toLowerCase() === highlight.phrase?.toLowerCase()
-      )
+      model.result.highlights?.some((h) => overlaps(normalize(h.phrase), targetPhrase))
     );
 
   const extractQuestionText = (content: string) => {
