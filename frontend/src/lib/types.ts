@@ -9,6 +9,7 @@ export type TimelinePoint = {
 export type EvidenceQuestion = {
   recordId?: string;
   question: string;
+  originalQuestion?: string;
   category: string; // human-facing label only
   insight: string;
   timeline: TimelinePoint[];

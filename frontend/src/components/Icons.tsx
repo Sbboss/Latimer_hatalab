@@ -106,3 +106,22 @@ export function Doc({ size = 16, className }: IconProps) {
     </svg>
   );
 }
+
+export function Check({ size = 16, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M3 8.5l3 3L13 4.5" />
+    </svg>
+  );
+}

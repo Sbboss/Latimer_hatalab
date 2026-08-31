@@ -10,7 +10,7 @@ from src.llm.azure_openai_client import (
     create_completion,
     openai_client,
 )
-from src.config import AZURE_MODEL_DEPLOYMENTS, AZURE_DEFAULT_MODEL
+from src.config import AZURE_MODEL_DEPLOYMENTS, AZURE_DEFAULT_MODEL, ordered_model_names
 from src.retrieval.rag import (
     build_retrieval_prompt,
     extract_timeline_from_document,
@@ -100,7 +100,7 @@ class QueryRequest(BaseModel):
     model: str | None = None
 
 
-def _plain_question_text(document: dict) -> str:
+def _original_question_text(document: dict) -> str:
     question = (document.get("question_text") or "").strip()
     if question:
         return question
@@ -110,6 +110,53 @@ def _plain_question_text(document: dict) -> str:
         if stripped.lower().startswith("question:"):
             return stripped.split(":", 1)[1].strip()
     return content.splitlines()[0].strip() if content.splitlines() else ""
+
+
+def _plain_language_question(document: dict) -> str:
+    """Turn technical ISSP labels into readable questions without changing meaning."""
+
+    original = _original_question_text(document)
+    source_survey = document.get("source_survey") or (
+        "ISSP" if str(document.get("id")).startswith("ISSP_") else "GSS"
+    )
+    if source_survey != "ISSP" or not original:
+        return original
+
+    occupation_match = re.match(
+        r"^(Father|Mother)'s occupation when R was \([^)]*\):.*$",
+        original,
+        flags=re.IGNORECASE,
+    )
+    if occupation_match:
+        parent = occupation_match.group(1).lower()
+        return (
+            f"What occupation did the respondent's {parent} have when the "
+            "respondent was about 15 years old?"
+        )
+
+    plain = original
+    plain = re.sub(r"\bR\b", "the respondent", plain)
+    plain = re.sub(r"\[Country\]", "the respondent's country", plain, flags=re.IGNORECASE)
+    plain = re.sub(
+        r"\s*:\s*(?:ILO|ISCO|NACE|SIOPS|ISEI|EGP)\b.*$",
+        "",
+        plain,
+        flags=re.IGNORECASE,
+    )
+    plain = re.sub(r"\s+", " ", plain).strip(" .")
+    question_starter = re.match(
+        r"^(who|what|when|where|why|how|do|does|did|is|are|was|were|can|could|would|should|has|have|which)\b",
+        plain,
+        flags=re.IGNORECASE,
+    )
+    if plain and not plain.endswith("?") and not question_starter:
+        plain = (
+            "How strongly does the respondent agree or disagree with this statement: "
+            f"{plain}?"
+        )
+    elif plain and not plain.endswith(("?", "!")):
+        plain += "?"
+    return plain or original
 
 
 def _document_to_evidence(document: dict) -> dict:
@@ -138,7 +185,8 @@ def _document_to_evidence(document: dict) -> dict:
 
     return {
         "recordId": document.get("id"),
-        "question": _plain_question_text(document),
+        "question": _plain_language_question(document),
+        "originalQuestion": _original_question_text(document),
         "category": ", ".join(document.get("categories") or []),
         "insight": insight,
         "timeline": timeline,
@@ -177,7 +225,8 @@ def ready_api():
 def models():
     """Expose the actual configured model deployments so the frontend never
     hardcodes/guesses model names that may drift from .env configuration."""
-    return {"models": list(AZURE_MODEL_DEPLOYMENTS.keys()) or [AZURE_DEFAULT_MODEL]}
+    configured = list(AZURE_MODEL_DEPLOYMENTS.keys()) or [AZURE_DEFAULT_MODEL]
+    return {"models": ordered_model_names(configured)}
 
 
 @app.get("/api/models")
@@ -289,7 +338,8 @@ def analyze(request: QueryRequest):
                 "expires_at": now_ts + ANALYZE_RETRIEVAL_CACHE_TTL_SECONDS,
             }
 
-    model_names = list(AZURE_MODEL_DEPLOYMENTS.keys()) or [AZURE_DEFAULT_MODEL]
+    configured_models = list(AZURE_MODEL_DEPLOYMENTS.keys()) or [AZURE_DEFAULT_MODEL]
+    model_names = ordered_model_names(configured_models)
 
     # Build RAG grounded prompt once (shared across model fan-out)
     prompt = build_retrieval_prompt(text, documents[: request.top_k])

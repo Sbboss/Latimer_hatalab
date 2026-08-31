@@ -41,6 +41,24 @@ DEFAULT_MODEL_DEPLOYMENTS = {
 	"Llama-3.3-70B-Instruct": "Llama-3.3-70B-Instruct",
 }
 
+MODEL_DISPLAY_ORDER = ("gpt-5.5", "claude-opus", "deepseek", "llama")
+
+
+def ordered_model_names(model_names) -> list[str]:
+	"""Return configured models in the product's stable display order."""
+
+	names = [str(name) for name in model_names]
+
+	def sort_key(item):
+		index, name = item
+		normalized = name.strip().lower()
+		for priority, prefix in enumerate(MODEL_DISPLAY_ORDER):
+			if normalized.startswith(prefix):
+				return priority, index
+		return len(MODEL_DISPLAY_ORDER), index
+
+	return [name for _, name in sorted(enumerate(names), key=sort_key)]
+
 
 def _load_model_deployments() -> dict[str, str]:
 	"""Load display-name to Azure deployment-name mapping from JSON env, with defaults."""

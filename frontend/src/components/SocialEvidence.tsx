@@ -1,24 +1,12 @@
 import type { EvidenceQuestion } from "../lib/types";
 import { featuredEvidence } from "../data/mockAnalysis";
 import { groupEvidenceBySurvey, SURVEY_ORDER } from "../lib/evidence";
+import { CoverageChart } from "./CoverageChart";
+import { SurveyQuestion } from "./SurveyQuestion";
 import { TimelineChart } from "./TimelineChart";
 
 type Props = {
   evidence?: EvidenceQuestion[];
-};
-
-const extractQuestionText = (content: string) => {
-  const text = content?.toString() ?? "";
-  const lines = text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-  if (!lines.length) return "";
-  let firstLine = lines[0];
-  if (firstLine.toLowerCase().startsWith("question:")) {
-    firstLine = firstLine.slice(9).trim();
-  }
-  return firstLine;
 };
 
 export function SocialEvidence({ evidence }: Props) {
@@ -46,10 +34,8 @@ export function SocialEvidence({ evidence }: Props) {
               Survey questions behind each signal.
             </h2>
           </div>
-          <p className="section-lede" style={{ marginTop: 0, maxWidth: 420 }}>
-            Retrieved GSS and ISSP questions show what researchers measured,
-            where, and when. A trend appears only when actual response
-            percentages are available.
+          <p className="section-lede section-lede-compact">
+            Question coverage is not an opinion trend.
           </p>
         </header>
 
@@ -103,15 +89,16 @@ export function SocialEvidence({ evidence }: Props) {
                   </span>
                 </div>
 
-                <h3 className="evidence-q">“{extractQuestionText(ev.question)}”</h3>
+                <SurveyQuestion evidence={ev} />
 
                 <div className="evidence-chart">
                   {hasTimeline ? (
                     <TimelineChart data={timeline} height={130} showAxis={false} />
                   ) : (
-                    <div className="evidence-chart-empty">
-                      Question coverage only · no response trend in this record
-                    </div>
+                    <CoverageChart
+                      waves={ev.availableWaves}
+                      countryCount={ev.countryCount}
+                    />
                   )}
                 </div>
 

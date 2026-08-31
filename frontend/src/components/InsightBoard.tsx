@@ -1,6 +1,8 @@
 import type { Highlight, ModelAnalysis } from "../lib/types";
 import { groupEvidenceBySurvey, SURVEY_ORDER } from "../lib/evidence";
+import { CoverageChart } from "./CoverageChart";
 import { DimensionsBars } from "./DimensionsBars";
+import { SurveyQuestion } from "./SurveyQuestion";
 import { TimelineChart } from "./TimelineChart";
 
 type Props = {
@@ -56,20 +58,6 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
     (count, survey) => count + evidenceBySurvey[survey].length,
     0
   );
-
-  const extractQuestionText = (content: string) => {
-    const text = content?.toString() ?? "";
-    const lines = text
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-    if (!lines.length) return "";
-    let firstLine = lines[0];
-    if (firstLine.toLowerCase().startsWith("question:")) {
-      firstLine = firstLine.slice(9).trim();
-    }
-    return firstLine;
-  };
 
   return (
     <div
@@ -158,13 +146,6 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
                 </div>
               </div>
             </div>
-            <p className="rewrite-why">
-              <strong style={{ color: "var(--accent-warm)", fontWeight: 500 }}>
-                Why this helps —{" "}
-              </strong>
-              {highlight.rewriteReason ||
-                "A rationale was not returned for this suggestion."}
-            </p>
           </div>
         </div>
 
@@ -208,27 +189,22 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
                   </div>
                   {evidence ? (
                     <>
-                      <p className="insight-board-question">
-                        “{extractQuestionText(evidence.question)}”
-                      </p>
-                      <p className="insight-board-provenance">
-                        {evidence.availableWaves?.length
-                          ? `Waves: ${evidence.availableWaves.join(", ")}`
-                          : "Waves not supplied"}
-                        {typeof evidence.countryCount === "number"
-                          ? ` · ${evidence.countryCount} countr${
-                              evidence.countryCount === 1 ? "y" : "ies"
-                            }`
-                          : ""}
-                        {evidence.sourceDataset
-                          ? ` · ${evidence.sourceDataset}`
-                          : ""}
-                      </p>
+                      <SurveyQuestion evidence={evidence} as="p" dark />
                       {(evidence.timeline?.length ?? 0) > 0 && (
                         <div style={{ marginTop: 16 }}>
                           <TimelineChart data={evidence.timeline} height={140} />
                         </div>
                       )}
+                      {(evidence.timeline?.length ?? 0) === 0 &&
+                        survey === "ISSP" && (
+                          <div style={{ marginTop: 16 }}>
+                            <CoverageChart
+                              waves={evidence.availableWaves}
+                              countryCount={evidence.countryCount}
+                              dark
+                            />
+                          </div>
+                        )}
                       <p className="insight-board-evidence-text">
                         {evidence.insight}
                       </p>

@@ -25,8 +25,8 @@ The current environment is set up for:
 
 - `GPT-5.5`
 - `Claude-Opus-4.8`
-- `Llama-3.3-70B-Instruct`
 - `DeepSeek-V4-Pro`
+- `Llama-3.3-70B-Instruct`
 
 The frontend reads model names dynamically from the backend, so the UI stays aligned with the `.env` configuration.
 
@@ -86,7 +86,7 @@ AZURE_ENDPOINT=https://<resource>.services.ai.azure.com/openai/v1
 AZURE_API_VERSION=2024-06-01
 
 AZURE_DEFAULT_MODEL=GPT-5.5
-AZURE_MODEL_DEPLOYMENTS_JSON={"DeepSeek-V4-Pro":"DeepSeek-V4-Pro","GPT-5.5":"gpt-5.5","Claude-Opus-4.8":"claude-opus-4-8","Llama-3.3-70B-Instruct":"Llama-3.3-70B-Instruct"}
+AZURE_MODEL_DEPLOYMENTS_JSON={"GPT-5.5":"gpt-5.5","Claude-Opus-4.8":"claude-opus-4-8","DeepSeek-V4-Pro":"DeepSeek-V4-Pro","Llama-3.3-70B-Instruct":"Llama-3.3-70B-Instruct"}
 
 AZURE_COGNITIVE_SEARCH_ENDPOINT=...
 AZURE_COGNITIVE_SEARCH_API_KEY=...
@@ -193,7 +193,9 @@ The system uses GSS- and ISSP-derived survey content in one Azure AI Search inde
 
 Azure's reciprocal-rank fusion combines both result lists. When enabled and supported by the service, semantic ranking reranks 50 candidates; any semantic-service error falls back to the existing hybrid query. Evidence is then aligned to each detected category and selected independently by survey, preserving retrieval rank within GSS and ISSP. The Insight Board shows one question from each survey, while Social Evidence shows two from each. When a source has no direct match, its reserved slot says so instead of presenting a tangential question.
 
-ISSP records in this export contain question wording and wave/country coverage, not response percentages. The prompt and UI explicitly prevent wave availability from being presented as an opinion trend.
+ISSP records in this export contain question wording and wave/country coverage, not response percentages. The UI presents technical ISSP labels in plain language, keeps the original wording and source identifiers in an expandable disclosure, and visualizes survey coverage without presenting it as an opinion trend.
+
+The workspace keeps all configured model cards in a single horizontal comparison row. User-triggered analyses show progress in place, remain in the workspace when complete, and provide both a visual completion state and a short completion chime. Configured models are displayed consistently as GPT, Claude, DeepSeek, then Llama.
 
 ## Reasoning / Thinking Support
 

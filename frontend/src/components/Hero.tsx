@@ -50,9 +50,14 @@ export function Hero({ onAnalyze, onExploreEvidence }: Props) {
           </div>
 
           <div className="hero-meta">
-            <div>
-              <strong>9 tagged dimensions</strong>
-              <div>Race · Gender · Class · Sexuality · …</div>
+            <div className="hero-meta-categories">
+              <strong>10 tagged dimensions</strong>
+              <div>
+                Race and Ethnicity · Sexual Orientation · Gender Expectations ·
+                Disability and Access · Economic Background/Socioeconomic Status ·
+                Political · Mental Health · Religion and Belief · Science Technology
+                and Medicine · Education
+              </div>
             </div>
             <div>
               <strong>GSS + ISSP</strong>

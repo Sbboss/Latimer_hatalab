@@ -55,6 +55,7 @@ src/
 ├── lib/
 │   ├── types.ts               # frontend mirror of the API contract
 │   ├── api.ts                 # fetch client with mock fallback
+│   ├── modelOrder.ts          # stable GPT/Claude/DeepSeek/Llama order
 │   └── segments.ts            # text → highlighted-segment renderer
 └── components/
     ├── Nav.tsx                # sticky nav + live/demo status chip
@@ -62,10 +63,12 @@ src/
     ├── Workspace.tsx          # editor card + dashboard card
     ├── HighlightedText.tsx    # interactive highlights (click → Insight Board)
     ├── Dashboard.tsx          # signal strength, dimensions, stats
+    ├── CoverageChart.tsx      # ISSP wave/country coverage visualization
     ├── InsightBoard.tsx       # selected signal explanation + rewrite
     ├── DimensionsBars.tsx     # horizontal bias-dimension bars
     ├── TimelineChart.tsx      # SVG public-attitude timeline
     ├── SocialEvidence.tsx     # two GSS + two ISSP evidence slots
+    ├── SurveyQuestion.tsx     # plain wording + expandable original source
     ├── HowItWorks.tsx         # 4-step method strip
     ├── Footer.tsx
     └── Icons.tsx
@@ -80,12 +83,15 @@ src/
 - Typography: IBM Plex Sans (400 / 500 / 600 / 700, plus italic 400 / 500)
   and JetBrains Mono for small labels. No serif display face.
 - All styles live in `src/styles/globals.css`. There is no CSS framework.
-- All charts (signal strength, dimensions bars, timelines) are inline SVG.
+- All charts (signal strength, dimensions bars, response timelines, and survey-coverage timelines) are inline SVG.
+- Model cards stay in one horizontal, scrollable comparison row.
+- User-triggered analysis shows in-place progress and visual/audio completion feedback without moving the page.
+- Technical ISSP wording is simplified for the primary view while the original survey text and source identifiers remain available on demand.
   There is no chart library.
 
 ## UI language rules
 
-The visible UI never shows backend codes, model names, route paths,
+The visible UI never shows backend codes, deployment names, route paths,
 embedding terminology, or infrastructure jargon. Stick to the user-facing
 vocabulary: bias signal strength, hidden assumption, social evidence,
 public attitude over time, survey question, suggested rewrite, why this

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AnalysisResult, ModelAnalysis } from "../lib/types";
 import { HighlightedText } from "./HighlightedText";
-import { Pencil, Reload, Sparkle } from "./Icons";
+import { Check, Pencil, Reload, Sparkle } from "./Icons";
 
 type Props = {
   analysis: AnalysisResult;
@@ -16,6 +16,8 @@ type Props = {
   onSelect: (id: string) => void;
   onAnalyze: () => void;
   isAnalyzing: boolean;
+  analysisProgress: number;
+  analysisState: "idle" | "running" | "complete";
   apiSource: "live" | "mock" | "unknown";
 };
 
@@ -32,6 +34,8 @@ export function Workspace({
   onSelect,
   onAnalyze,
   isAnalyzing,
+  analysisProgress,
+  analysisState,
   apiSource,
 }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null);
@@ -54,20 +58,20 @@ export function Workspace({
   return (
     <section className="section" id="workspace">
       <div className="container">
-        <div className="workspace-intro">
+        <div className="workspace-intro workspace-intro-compact">
           <div>
             <span className="section-eyebrow">01 · Live workspace</span>
             <h2 className="section-heading">
               Paste a sentence. Compare every model’s bias readout.
             </h2>
           </div>
-          <p className="section-lede" style={{ marginTop: 0, maxWidth: 420 }}>
-            The app fires the same text to all of our LLMs. Each model returns a
-            trigger phrase, category breakdowns, and an overall signal score.
-          </p>
         </div>
 
-          <div className="editor-card">
+          <div
+            className={`editor-card${
+              analysisState === "complete" ? " is-analysis-complete" : ""
+            }`}
+          >
             <div className="editor-head">
               <div>
                 <span className="editor-title">
@@ -75,7 +79,6 @@ export function Workspace({
                 </span>
                 <div className="model-badge-row">
                   <span className="chip chip-accent">Active model: {activeModel.model}</span>
-                  <span className="text-muted">Swipe the cards below to compare features from each model.</span>
                 </div>
               </div>
 
@@ -96,13 +99,19 @@ export function Workspace({
                   </button>
                 )}
                 <button
-                  className="btn btn-accent"
+                  className={`btn btn-accent${
+                    analysisState === "complete" ? " is-complete" : ""
+                  }`}
                   onClick={onAnalyze}
                   disabled={isAnalyzing}
                 >
-                  {isAnalyzing ? (
+                  {analysisState === "running" ? (
                     <>
                       <Reload size={14} /> Analyzing…
+                    </>
+                  ) : analysisState === "complete" ? (
+                    <>
+                      <Check size={15} /> Analysis complete
                     </>
                   ) : (
                     <>
@@ -112,6 +121,38 @@ export function Workspace({
                 </button>
               </div>
             </div>
+
+            {analysisState !== "idle" && (
+              <div
+                className={`analysis-progress${
+                  analysisState === "complete" ? " is-complete" : ""
+                }`}
+                role="status"
+                aria-live="polite"
+              >
+                <div className="analysis-progress-copy">
+                  <span>
+                    {analysisState === "complete"
+                      ? "Analysis complete"
+                      : "Comparing configured models"}
+                  </span>
+                  <span>{Math.round(analysisProgress)}%</span>
+                </div>
+                <div
+                  className="analysis-progress-track"
+                  role="progressbar"
+                  aria-label="Analysis progress"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(analysisProgress)}
+                >
+                  <div
+                    className="analysis-progress-fill"
+                    style={{ width: `${analysisProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="editor-body">
               <div className="editor-main">
@@ -138,6 +179,7 @@ export function Workspace({
                   <div className="score-panel-head">
                     <span className="section-eyebrow">LLM scorebook</span>
                     <h3 className="score-panel-title">All model scores</h3>
+                    <span className="score-panel-hint">Scroll sideways to compare</span>
                   </div>
 
                   <div className="score-panel-list">

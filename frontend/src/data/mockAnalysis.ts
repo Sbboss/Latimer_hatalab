@@ -340,8 +340,8 @@ function aggregateCategoryScores(highlights: Highlight[]): CategoryScore[] {
 export const DEFAULT_MODEL_NAMES = [
   "GPT-5.5",
   "Claude-Opus-4.6",
-  "Llama-3.3-70B-Instruct",
   "DeepSeek-V4-Pro",
+  "Llama-3.3-70B-Instruct",
 ];
 
 export function mockAnalyzeModels(

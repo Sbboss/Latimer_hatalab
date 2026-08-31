@@ -1,5 +1,6 @@
 import type { AnalysisResponse, ModelAnalysis } from "./types";
 import { DEFAULT_MODEL_NAMES, mockAnalyzeModels } from "../data/mockAnalysis";
+import { orderModelAnalyses, orderModelNames } from "./modelOrder";
 
 const API_BASE = "/api";
 
@@ -22,9 +23,11 @@ export async function fetchModelNames(signal?: AbortSignal): Promise<string[]> {
     const r = await fetch(`${API_BASE}/models`, { signal });
     if (!r.ok) return DEFAULT_MODEL_NAMES;
     const j = await r.json();
-    return Array.isArray(j?.models) && j.models.length ? j.models : DEFAULT_MODEL_NAMES;
+    return orderModelNames(
+      Array.isArray(j?.models) && j.models.length ? j.models : DEFAULT_MODEL_NAMES
+    );
   } catch {
-    return DEFAULT_MODEL_NAMES;
+    return orderModelNames(DEFAULT_MODEL_NAMES);
   }
 }
 
@@ -42,12 +45,15 @@ export async function analyzeText(
       if (r.ok) {
         const j = (await r.json()) as AnalysisResponse;
         if (j?.models?.length) {
-          return { models: j.models, source: "live" };
+          return { models: orderModelAnalyses(j.models), source: "live" };
         }
       }
     } catch {
       // fall through to mock
     }
   }
-  return { models: mockAnalyzeModels(text, opts.modelNames), source: "mock" };
+  return {
+    models: orderModelAnalyses(mockAnalyzeModels(text, opts.modelNames)),
+    source: "mock",
+  };
 }

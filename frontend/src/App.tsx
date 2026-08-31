@@ -25,7 +25,13 @@ export default function App() {
   const [apiStatus, setApiStatus] = useState<ApiStatus>("unknown");
   const [apiSource, setApiSource] = useState<ApiStatus>("unknown");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [analysisState, setAnalysisState] = useState<
+    "idle" | "running" | "complete"
+  >("idle");
   const [modelNames, setModelNames] = useState<string[] | null>(null);
+  const completionAudioRef = useRef<AudioContext | null>(null);
+  const completionResetRef = useRef<number | null>(null);
 
   const workspaceRef = useRef<HTMLDivElement>(null);
   const evidenceRef = useRef<HTMLDivElement>(null);
@@ -99,8 +105,68 @@ export default function App() {
     }
   }, [activeAnalysis, selectedId]);
 
+  useEffect(() => {
+    if (!isAnalyzing) return;
+    const progressTimer = window.setInterval(() => {
+      setAnalysisProgress((current) => {
+        const increment = current < 35 ? 5 : current < 70 ? 2.5 : 1;
+        return Math.min(92, current + increment);
+      });
+    }, 700);
+    return () => window.clearInterval(progressTimer);
+  }, [isAnalyzing]);
+
+  useEffect(
+    () => () => {
+      if (completionResetRef.current !== null) {
+        window.clearTimeout(completionResetRef.current);
+      }
+      void completionAudioRef.current?.close();
+    },
+    []
+  );
+
+  function prepareCompletionAudio() {
+    if (completionAudioRef.current) return;
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!AudioContextClass) return;
+    completionAudioRef.current = new AudioContextClass();
+    void completionAudioRef.current.resume();
+  }
+
+  function playCompletionChime() {
+    const context = completionAudioRef.current;
+    if (!context) return;
+    void context.resume();
+    const start = context.currentTime + 0.02;
+    const gain = context.createGain();
+    gain.connect(context.destination);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.12, start + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.42);
+
+    [659.25, 783.99].forEach((frequency, index) => {
+      const oscillator = context.createOscillator();
+      oscillator.type = "sine";
+      oscillator.frequency.value = frequency;
+      oscillator.connect(gain);
+      oscillator.start(start + index * 0.11);
+      oscillator.stop(start + 0.36 + index * 0.06);
+    });
+  }
+
   async function handleAnalyze() {
+    if (isAnalyzing) return;
+    prepareCompletionAudio();
+    if (completionResetRef.current !== null) {
+      window.clearTimeout(completionResetRef.current);
+    }
     setIsAnalyzing(true);
+    setAnalysisProgress(5);
+    setAnalysisState("running");
     try {
       const { models, source } = await analyzeText(inputText, {
         preferLive: apiStatus === "live",
@@ -113,11 +179,13 @@ export default function App() {
       }
       setApiSource(source);
       setMode("analyzed");
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          scrollToInsightBoard();
-        });
-      });
+      setAnalysisProgress(100);
+      setAnalysisState("complete");
+      playCompletionChime();
+      completionResetRef.current = window.setTimeout(() => {
+        setAnalysisState("idle");
+        setAnalysisProgress(0);
+      }, 5000);
     } finally {
       setIsAnalyzing(false);
     }
@@ -200,6 +268,8 @@ export default function App() {
             onSelect={handleHighlightSelect}
             onAnalyze={handleAnalyze}
             isAnalyzing={isAnalyzing}
+            analysisProgress={analysisProgress}
+            analysisState={analysisState}
             apiSource={apiSource}
           />
 
@@ -219,10 +289,6 @@ export default function App() {
                   Understand the signal before changing the words.
                 </h2>
               </div>
-              <p className="section-lede" style={{ marginTop: 0, maxWidth: 420 }}>
-                Inspect the explanation, reflect on the hidden assumption, and
-                compare one GSS question with one ISSP question.
-              </p>
             </header>
 
             <InsightBoard
