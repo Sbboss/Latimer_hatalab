@@ -1,8 +1,8 @@
 # Frontend prototype
 
 Vite + React + TypeScript single-page demo. Renders the hero, live
-workspace, dashboard, cockpit, social-evidence and method sections, and
-implements the highlight ↔ cockpit interaction.
+workspace, Insight Board, social-evidence, and method sections, and
+implements the highlight ↔ Insight Board interaction.
 
 The frontend is designed around the structured contract in
 [`../docs/API_CONTRACT.md`](../docs/API_CONTRACT.md). It can run entirely
@@ -60,12 +60,12 @@ src/
     ├── Nav.tsx                # sticky nav + live/demo status chip
     ├── Hero.tsx               # headline, copy, preview card, timeline mini
     ├── Workspace.tsx          # editor card + dashboard card
-    ├── HighlightedText.tsx    # interactive highlights (click → cockpit)
+    ├── HighlightedText.tsx    # interactive highlights (click → Insight Board)
     ├── Dashboard.tsx          # signal strength, dimensions, stats
-    ├── Cockpit.tsx            # selected signal explanation + rewrite
+    ├── InsightBoard.tsx       # selected signal explanation + rewrite
     ├── DimensionsBars.tsx     # horizontal bias-dimension bars
     ├── TimelineChart.tsx      # SVG public-attitude timeline
-    ├── SocialEvidence.tsx     # 3 evidence cards under workspace
+    ├── SocialEvidence.tsx     # two GSS + two ISSP evidence slots
     ├── HowItWorks.tsx         # 4-step method strip
     ├── Footer.tsx
     └── Icons.tsx

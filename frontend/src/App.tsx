@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Cockpit } from "./components/Cockpit";
 import { Footer } from "./components/Footer";
 import { Hero } from "./components/Hero";
 import { HowItWorks } from "./components/HowItWorks";
+import { InsightBoard } from "./components/InsightBoard";
 import { Nav } from "./components/Nav";
 import { SocialEvidence } from "./components/SocialEvidence";
 import { Workspace } from "./components/Workspace";
 import { mockAnalyzeModels, SAMPLE_TEXT } from "./data/mockAnalysis";
 import { analyzeText, fetchModelNames, pingApi } from "./lib/api";
-import type { ApiStatus, EvidenceQuestion, ModelAnalysis } from "./lib/types";
+import { selectBalancedEvidence } from "./lib/evidence";
+import type { ApiStatus, ModelAnalysis } from "./lib/types";
 
 export default function App() {
   const initialModels = mockAnalyzeModels(SAMPLE_TEXT);
@@ -28,7 +29,7 @@ export default function App() {
 
   const workspaceRef = useRef<HTMLDivElement>(null);
   const evidenceRef = useRef<HTMLDivElement>(null);
-  const cockpitRef = useRef<HTMLDivElement>(null);
+  const insightBoardRef = useRef<HTMLElement>(null);
 
   const activeModel = analysisModels[activeModelIndex] ?? analysisModels[0];
   const activeAnalysis = activeModel?.result;
@@ -41,18 +42,10 @@ export default function App() {
     [activeAnalysis, selectedId]
   );
 
-  const activeEvidence = useMemo(() => {
-    const seen = new Set<string>();
-    const evidence: EvidenceQuestion[] = [];
-
-    selectedHighlight?.evidence?.forEach((item) => {
-      if (!item?.question || seen.has(item.question)) return;
-      seen.add(item.question);
-      evidence.push(item);
-    });
-
-    return evidence.slice(0, 3);
-  }, [selectedHighlight]);
+  const activeEvidence = useMemo(
+    () => selectBalancedEvidence(selectedHighlight?.evidence, 2),
+    [selectedHighlight]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -122,10 +115,7 @@ export default function App() {
       setMode("analyzed");
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          cockpitRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
+          scrollToInsightBoard();
         });
       });
     } finally {
@@ -169,6 +159,14 @@ export default function App() {
     requestAnimationFrame(step);
   }
 
+  function scrollToInsightBoard() {
+    const target = insightBoardRef.current;
+    if (!target) return;
+
+    const targetTop = window.scrollY + target.getBoundingClientRect().top - 88;
+    window.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+  }
+
   function handleModelSelect(index: number) {
     setActiveModelIndex(index);
     setSelectedId(
@@ -178,37 +176,7 @@ export default function App() {
 
   function handleHighlightSelect(id: string) {
     setSelectedId(id);
-
-    const target = cockpitRef.current;
-    if (!target) return;
-
-    // Slow, controlled scroll that centers the cockpit card in viewport.
-    const targetRect = target.getBoundingClientRect();
-    const absoluteTargetTop = window.scrollY + targetRect.top;
-    const desiredScrollY = absoluteTargetTop - (window.innerHeight - targetRect.height) / 2;
-    const maxScrollY = document.documentElement.scrollHeight - window.innerHeight;
-    const clampedTargetY = Math.max(0, Math.min(desiredScrollY, Math.max(0, maxScrollY)));
-
-    const startY = window.scrollY;
-    const distance = clampedTargetY - startY;
-    const durationMs = 850;
-    const startTime = performance.now();
-
-    const easeInOutCubic = (t: number) =>
-      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-    const step = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(1, elapsed / durationMs);
-      const eased = easeInOutCubic(progress);
-      window.scrollTo(0, startY + distance * eased);
-
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      }
-    };
-
-    requestAnimationFrame(step);
+    requestAnimationFrame(scrollToInsightBoard);
   }
 
   return (
@@ -235,19 +203,36 @@ export default function App() {
             apiSource={apiSource}
           />
 
-          <div
-            ref={cockpitRef}
-            className="container"
-            style={{ paddingTop: 8, paddingBottom: 8 }}
-          >
-            <Cockpit
+        </div>
+
+        <section
+          className="section insight-board-section"
+          id="insight-board"
+          ref={insightBoardRef}
+          aria-labelledby="insight-board-title"
+        >
+          <div className="container">
+            <header className="section-intro">
+              <div>
+                <span className="section-eyebrow">02 · Insight Board</span>
+                <h2 className="section-heading" id="insight-board-title">
+                  Understand the signal before changing the words.
+                </h2>
+              </div>
+              <p className="section-lede" style={{ marginTop: 0, maxWidth: 420 }}>
+                Inspect the explanation, reflect on the hidden assumption, and
+                compare one GSS question with one ISSP question.
+              </p>
+            </header>
+
+            <InsightBoard
               highlight={selectedHighlight}
               models={analysisModels}
               activeModelIndex={activeModelIndex}
               onModelSelect={handleModelSelect}
             />
           </div>
-        </div>
+        </section>
 
         <div ref={evidenceRef}>
           <SocialEvidence evidence={activeEvidence} />

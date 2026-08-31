@@ -25,7 +25,7 @@ export function HowItWorks() {
   return (
     <section className="section" id="method">
       <div className="container">
-        <span className="section-eyebrow">03 · Method</span>
+        <span className="section-eyebrow">04 · Method</span>
         <h2 className="section-heading">
           Built like a research instrument, used like a writing tool.
         </h2>

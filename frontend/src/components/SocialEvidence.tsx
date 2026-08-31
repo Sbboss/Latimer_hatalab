@@ -1,5 +1,6 @@
 import type { EvidenceQuestion } from "../lib/types";
 import { featuredEvidence } from "../data/mockAnalysis";
+import { groupEvidenceBySurvey, SURVEY_ORDER } from "../lib/evidence";
 import { TimelineChart } from "./TimelineChart";
 
 type Props = {
@@ -22,22 +23,26 @@ const extractQuestionText = (content: string) => {
 
 export function SocialEvidence({ evidence }: Props) {
   const evidenceItems = evidence ?? featuredEvidence;
+  const evidenceBySurvey = groupEvidenceBySurvey(evidenceItems, 2);
+  const evidenceSlots = [0, 1].flatMap((rank) =>
+    SURVEY_ORDER.map((survey) => ({
+      survey,
+      evidence: evidenceBySurvey[survey][rank],
+      rank,
+    }))
+  );
 
   return (
-    <section className="section" id="evidence">
+    <section
+      className="section"
+      id="social-evidence"
+      aria-labelledby="social-evidence-title"
+    >
       <div className="container">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 24,
-          }}
-        >
+        <header className="section-intro">
           <div>
-            <span className="section-eyebrow">02 · Social evidence</span>
-            <h2 className="section-heading">
+            <span className="section-eyebrow">03 · Social evidence</span>
+            <h2 className="section-heading" id="social-evidence-title">
               Survey questions behind each signal.
             </h2>
           </div>
@@ -46,22 +51,33 @@ export function SocialEvidence({ evidence }: Props) {
             where, and when. A trend appears only when actual response
             percentages are available.
           </p>
-        </div>
+        </header>
 
-        <div className="evidence-grid">
-          {evidenceItems.length === 0 && (
-            <article className="evidence-card card">
-              <span className="chip chip-accent">Evidence boundary</span>
-              <h3 className="evidence-q">
-                No directly aligned survey question was retrieved.
-              </h3>
-              <p className="evidence-insight">
-                The app leaves this section empty rather than presenting a
-                tangential question as support.
-              </p>
-            </article>
-          )}
-          {evidenceItems.map((ev, index) => {
+        <div className="evidence-grid" aria-label="Two GSS and two ISSP questions">
+          {evidenceSlots.map(({ survey, evidence: ev, rank }) => {
+            if (!ev) {
+              return (
+                <article
+                  className="evidence-card card evidence-card-missing"
+                  key={`${survey}-${rank}-missing`}
+                >
+                  <div className="evidence-meta-tags">
+                    <span className="chip chip-accent">{survey}</span>
+                    <span className="chip chip-accent">
+                      Evidence boundary
+                    </span>
+                  </div>
+                  <h3 className="evidence-q">
+                    No directly aligned {survey} question was retrieved.
+                  </h3>
+                  <p className="evidence-insight">
+                    This reserved source slot stays explicit instead of being
+                    filled with a tangential question from another survey.
+                  </p>
+                </article>
+              );
+            }
+
             const timeline = ev.timeline ?? [];
             const hasTimeline = timeline.length > 0;
             const first = timeline[0]!;
@@ -69,12 +85,13 @@ export function SocialEvidence({ evidence }: Props) {
             const delta = hasTimeline ? last.support - first.support : 0;
             const deltaDisplay = `${delta > 0 ? "+" : ""}${delta.toFixed(2)}`;
             return (
-              <article className="evidence-card card" key={`${ev.question}-${index}`}>
+              <article
+                className="evidence-card card"
+                key={ev.recordId ?? `${survey}-${rank}-${ev.question}`}
+              >
                 <div className="evidence-meta">
                   <div className="evidence-meta-tags">
-                    <span className="chip chip-accent">
-                      {ev.survey ?? `Question ${index + 1}`}
-                    </span>
+                    <span className="chip chip-accent">{survey}</span>
                     <span className="chip chip-accent">{ev.category}</span>
                   </div>
                   <span className="evidence-meta-date">

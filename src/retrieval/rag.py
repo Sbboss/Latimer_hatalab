@@ -188,29 +188,55 @@ def canonical_category(category: str | None) -> str | None:
     return None
 
 
-def select_evidence_documents(
-    documents: List[dict], category: str | None, limit: int = 3
-) -> List[dict]:
-    """Keep only evidence aligned to the detected category.
+def _document_survey(document: dict) -> str | None:
+    survey = str(document.get("source_survey") or "").strip().upper()
+    if survey in {"GSS", "ISSP"}:
+        return survey
+    record_id = str(document.get("id") or "")
+    if record_id.startswith("ISSP_"):
+        return "ISSP"
+    if record_id:
+        return "GSS"
+    return None
 
-    Returning no evidence is more honest than copying unrelated top results
-    onto every highlight in a multi-category passage.
+
+def select_evidence_documents(
+    documents: List[dict], category: str | None, per_survey_limit: int = 2
+) -> List[dict]:
+    """Select category-aligned evidence with equal GSS and ISSP quotas.
+
+    Input order is retrieval rank. The selector preserves rank within each
+    survey and interleaves the selected GSS and ISSP records so one source
+    cannot crowd the other out. Missing aligned evidence stays missing rather
+    than being replaced with a tangential question.
     """
 
-    if limit <= 0:
+    if per_survey_limit <= 0:
         return []
     target = canonical_category(category)
     if target is None:
         return []
-    matches = []
+
+    matches: dict[str, list[dict]] = {"GSS": [], "ISSP": []}
     for document in documents:
         document_categories = {
             canonical_category(value) or value
             for value in (document.get("categories") or [])
         }
-        if target in document_categories:
-            matches.append(document)
-    return matches[:limit]
+        survey = _document_survey(document)
+        if (
+            target in document_categories
+            and survey in matches
+            and len(matches[survey]) < per_survey_limit
+        ):
+            matches[survey].append(document)
+
+    balanced = []
+    for rank in range(per_survey_limit):
+        for survey in ("GSS", "ISSP"):
+            if rank < len(matches[survey]):
+                balanced.append(matches[survey][rank])
+    return balanced
 
 
 def build_retrieval_prompt(user_text: str, retrieved_docs: List[dict]) -> str:
@@ -254,3 +280,42 @@ def retrieve_top_documents(query_embedding: list[float], query_text: str | None 
     from src.storage.azure_vector_store import query_vectors
 
     return query_vectors(query_embedding=query_embedding, query_text=query_text, top_k=top_k)
+
+
+def interleave_survey_documents(
+    gss_documents: list[dict],
+    issp_documents: list[dict],
+) -> list[dict]:
+    """Merge independently ranked survey results without changing either rank."""
+
+    merged: list[dict] = []
+    for rank in range(max(len(gss_documents), len(issp_documents))):
+        if rank < len(gss_documents):
+            merged.append(gss_documents[rank])
+        if rank < len(issp_documents):
+            merged.append(issp_documents[rank])
+    return merged
+
+
+def retrieve_balanced_documents(
+    query_embedding: list[float],
+    query_text: str | None = None,
+    per_survey_k: int = 5,
+) -> list[dict]:
+    """Retrieve GSS and ISSP candidates independently, then merge by rank."""
+
+    from src.storage.azure_vector_store import query_vectors
+
+    gss_documents = query_vectors(
+        query_embedding=query_embedding,
+        query_text=query_text,
+        top_k=per_survey_k,
+        source_survey="GSS",
+    )
+    issp_documents = query_vectors(
+        query_embedding=query_embedding,
+        query_text=query_text,
+        top_k=per_survey_k,
+        source_survey="ISSP",
+    )
+    return interleave_survey_documents(gss_documents, issp_documents)

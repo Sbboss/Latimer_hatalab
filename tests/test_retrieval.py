@@ -5,6 +5,7 @@ from src.retrieval.rag import (
     build_retrieval_prompt,
     canonical_category,
     extract_timeline_from_document,
+    interleave_survey_documents,
     select_evidence_documents,
 )
 
@@ -29,11 +30,73 @@ class RetrievalGroundingTests(unittest.TestCase):
             [
                 document["id"]
                 for document in select_evidence_documents(
-                    documents, "Gender / sexism", limit=3
+                    documents, "Gender / sexism", per_survey_limit=2
                 )
             ],
         )
-        self.assertEqual([], select_evidence_documents(documents, "Age", limit=3))
+        self.assertEqual(
+            [],
+            select_evidence_documents(
+                documents,
+                "Age",
+                per_survey_limit=2,
+            ),
+        )
+
+    def test_evidence_preserves_rank_with_equal_survey_quotas(self):
+        documents = [
+            {
+                "id": "gss-1",
+                "source_survey": "GSS",
+                "categories": ["Gender Expectations"],
+            },
+            {
+                "id": "gss-2",
+                "categories": ["Gender Expectations"],
+            },
+            {
+                "id": "gss-3",
+                "source_survey": "GSS",
+                "categories": ["Gender Expectations"],
+            },
+            {
+                "id": "ISSP_FCGR_1",
+                "source_survey": "ISSP",
+                "categories": ["Gender Expectations"],
+            },
+            {
+                "id": "ISSP_FCGR_2",
+                "source_survey": "ISSP",
+                "categories": ["Gender Expectations"],
+            },
+            {
+                "id": "ISSP_REL_1",
+                "source_survey": "ISSP",
+                "categories": ["Religion and Belief"],
+            },
+        ]
+
+        selected = select_evidence_documents(
+            documents,
+            "Gender / sexism",
+            per_survey_limit=2,
+        )
+
+        self.assertEqual(
+            ["gss-1", "ISSP_FCGR_1", "gss-2", "ISSP_FCGR_2"],
+            [document["id"] for document in selected],
+        )
+
+    def test_balanced_retrieval_merge_preserves_each_survey_rank(self):
+        merged = interleave_survey_documents(
+            [{"id": "gss-1"}, {"id": "gss-2"}, {"id": "gss-3"}],
+            [{"id": "issp-1"}, {"id": "issp-2"}],
+        )
+
+        self.assertEqual(
+            ["gss-1", "issp-1", "gss-2", "issp-2", "gss-3"],
+            [document["id"] for document in merged],
+        )
 
     def test_issp_without_response_percentages_has_no_timeline(self):
         self.assertEqual(

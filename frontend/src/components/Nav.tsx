@@ -24,8 +24,8 @@ export function Nav({ apiStatus, onTryDemo }: Props) {
 
         <nav className="nav-links" aria-label="Primary">
           <a href="#workspace">Workspace</a>
-          <a href="#cockpit">Cockpit</a>
-          <a href="#evidence">Evidence</a>
+          <a href="#insight-board">Insight Board</a>
+          <a href="#social-evidence">Evidence</a>
           <a href="#method">Method</a>
         </nav>
 

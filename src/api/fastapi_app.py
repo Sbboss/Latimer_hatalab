@@ -14,7 +14,7 @@ from src.config import AZURE_MODEL_DEPLOYMENTS, AZURE_DEFAULT_MODEL
 from src.retrieval.rag import (
     build_retrieval_prompt,
     extract_timeline_from_document,
-    retrieve_top_documents,
+    retrieve_balanced_documents,
     select_evidence_documents,
 )
 import re
@@ -28,6 +28,7 @@ from threading import Lock
 app = FastAPI(title="Latimer AI Bias Backend")
 
 ANALYZE_RETRIEVAL_CACHE_TTL_SECONDS = int(os.getenv("ANALYZE_RETRIEVAL_CACHE_TTL_SECONDS", "900"))
+ANALYZE_EVIDENCE_POOL_SIZE = int(os.getenv("ANALYZE_EVIDENCE_POOL_SIZE", "32"))
 _retrieval_cache_lock = Lock()
 _retrieval_cache: dict[str, dict] = {}
 
@@ -222,7 +223,12 @@ def bias_query(request: QueryRequest):
 
     client = openai_client()
     embedding = create_embedding(client, request.text)
-    documents = retrieve_top_documents(embedding, query_text=request.text, top_k=request.top_k)
+    per_survey_k = max(1, (request.top_k + 1) // 2)
+    documents = retrieve_balanced_documents(
+        embedding,
+        query_text=request.text,
+        per_survey_k=per_survey_k,
+    )[: request.top_k]
 
     prompt = build_retrieval_prompt(request.text, documents)
     completion = create_completion(client, prompt, model=request.model)
@@ -252,7 +258,11 @@ def analyze(request: QueryRequest):
     text = request.text
 
     # Retrieve vector evidence once (shared grounding context), cached by input hash.
-    cache_key = hashlib.sha256(f"{text}||{request.top_k}".encode("utf-8")).hexdigest()
+    evidence_pool_size = max(request.top_k, ANALYZE_EVIDENCE_POOL_SIZE)
+    per_survey_pool_size = max(2, (evidence_pool_size + 1) // 2)
+    cache_key = hashlib.sha256(
+        f"{text}||{request.top_k}||{per_survey_pool_size}||balanced-v1".encode("utf-8")
+    ).hexdigest()
     now_ts = time.time()
 
     embedding = None
@@ -267,7 +277,11 @@ def analyze(request: QueryRequest):
 
     if embedding is None or documents is None:
         embedding = create_embedding(client, text)
-        documents = retrieve_top_documents(embedding, query_text=text, top_k=request.top_k)
+        documents = retrieve_balanced_documents(
+            embedding,
+            query_text=text,
+            per_survey_k=per_survey_pool_size,
+        )
         with _retrieval_cache_lock:
             _retrieval_cache[cache_key] = {
                 "embedding": embedding,
@@ -278,7 +292,7 @@ def analyze(request: QueryRequest):
     model_names = list(AZURE_MODEL_DEPLOYMENTS.keys()) or [AZURE_DEFAULT_MODEL]
 
     # Build RAG grounded prompt once (shared across model fan-out)
-    prompt = build_retrieval_prompt(text, documents)
+    prompt = build_retrieval_prompt(text, documents[: request.top_k])
 
     def run_model(model_name: str):
         model_status = "ok"
@@ -404,7 +418,11 @@ def analyze(request: QueryRequest):
             cat_label = cat.get("category", "Bias")
             cat_score = float(cat.get("score", bias_score))
             category_scores.append({"category": cat_label, "score": cat_score})
-            evidence_documents = select_evidence_documents(documents, cat_label, limit=3)
+            evidence_documents = select_evidence_documents(
+                documents,
+                cat_label,
+                per_survey_limit=2,
+            )
             evidence = [_document_to_evidence(document) for document in evidence_documents]
 
             triggers = cat.get("trigger_phrases", [])

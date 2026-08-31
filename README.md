@@ -92,6 +92,7 @@ AZURE_COGNITIVE_SEARCH_ENDPOINT=...
 AZURE_COGNITIVE_SEARCH_API_KEY=...
 AZURE_OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 AZURE_COGNITIVE_SEARCH_SEMANTIC_ENABLED=true
+ANALYZE_EVIDENCE_POOL_SIZE=32
 ```
 
 If you are using Claude through Azure Foundry, also set:
@@ -190,7 +191,7 @@ The system uses GSS- and ISSP-derived survey content in one Azure AI Search inde
 - vector similarity from the input embedding
 - keyword ranking from the raw query text
 
-Azure's reciprocal-rank fusion combines both result lists. When enabled and supported by the service, semantic ranking reranks 50 candidates; any semantic-service error falls back to the existing hybrid query. Evidence is then aligned to each detected category instead of copying the same top results to every highlight. When no direct match exists, the UI says so rather than presenting tangential evidence.
+Azure's reciprocal-rank fusion combines both result lists. When enabled and supported by the service, semantic ranking reranks 50 candidates; any semantic-service error falls back to the existing hybrid query. Evidence is then aligned to each detected category and selected independently by survey, preserving retrieval rank within GSS and ISSP. The Insight Board shows one question from each survey, while Social Evidence shows two from each. When a source has no direct match, its reserved slot says so instead of presenting a tangential question.
 
 ISSP records in this export contain question wording and wave/country coverage, not response percentages. The prompt and UI explicitly prevent wave availability from being presented as an opinion trend.
 

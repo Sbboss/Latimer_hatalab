@@ -274,6 +274,7 @@ def _run_search(
     top_k: int,
     semantic: bool,
     select_fields: list[str],
+    filter_expression: str | None = None,
 ) -> list[dict]:
     kwargs = {
         "search_text": query_text if query_text else "*",
@@ -281,6 +282,8 @@ def _run_search(
         "top": top_k,
         "select": select_fields,
     }
+    if filter_expression:
+        kwargs["filter"] = filter_expression
     if semantic and query_text:
         kwargs.update(
             {
@@ -296,9 +299,20 @@ def query_vectors(
     query_embedding: list[float],
     query_text: str | None = None,
     top_k: int = 5,
+    source_survey: str | None = None,
 ) -> list[dict]:
     if top_k <= 0:
         raise ValueError("top_k must be positive")
+
+    survey = source_survey.upper() if source_survey else None
+    if survey not in {None, "GSS", "ISSP"}:
+        raise ValueError("source_survey must be GSS, ISSP, or None")
+    filter_expression = None
+    if survey == "GSS":
+        # Legacy GSS records predate source_survey; null is therefore GSS.
+        filter_expression = "source_survey eq 'GSS' or source_survey eq null"
+    elif survey == "ISSP":
+        filter_expression = "source_survey eq 'ISSP'"
 
     client = create_search_client()
     use_semantic = AZURE_COGNITIVE_SEARCH_SEMANTIC_ENABLED and bool(query_text)
@@ -341,6 +355,7 @@ def query_vectors(
                 top_k=top_k,
                 semantic=semantic,
                 select_fields=fields,
+                filter_expression=filter_expression,
             )
             break
         except HttpResponseError as exc:
