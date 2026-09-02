@@ -206,13 +206,6 @@ export function Workspace({
                             <div className="model-score-subtitle">
                               {model.result.highlights.length} trigger phrase{model.result.highlights.length === 1 ? "" : "s"}
                             </div>
-                            <div className="category-chip-row">
-                              {model.categories.slice(0, 3).map((category) => (
-                                <span key={`${model.model}-${category.category}`} className="chip chip-quiet">
-                                  {category.category} {Math.round(category.score * 100)}%
-                                </span>
-                              ))}
-                            </div>
                           </div>
 
                           <div className="model-card-face model-card-back">
