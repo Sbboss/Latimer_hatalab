@@ -35,7 +35,8 @@ export function SocialEvidence({ evidence }: Props) {
             </h2>
           </div>
           <p className="section-lede section-lede-compact">
-            Question coverage is not an opinion trend.
+            Response trends appear only when percentages exist; otherwise we
+            show survey-wave coverage.
           </p>
         </header>
 

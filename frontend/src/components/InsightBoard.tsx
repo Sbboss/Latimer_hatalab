@@ -163,7 +163,7 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
 
           <div className="insight-board-block" id="insight-board-evidence">
             <div className="insight-board-h">
-              One GSS + one ISSP question
+              Balanced survey evidence
             </div>
             {SURVEY_ORDER.map((survey, index) => {
               const evidence = evidenceBySurvey[survey][0];
@@ -192,19 +192,22 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
                       <SurveyQuestion evidence={evidence} as="p" dark />
                       {(evidence.timeline?.length ?? 0) > 0 && (
                         <div style={{ marginTop: 16 }}>
-                          <TimelineChart data={evidence.timeline} height={140} />
+                          <TimelineChart
+                            data={evidence.timeline}
+                            height={140}
+                            dark
+                          />
                         </div>
                       )}
-                      {(evidence.timeline?.length ?? 0) === 0 &&
-                        survey === "ISSP" && (
-                          <div style={{ marginTop: 16 }}>
-                            <CoverageChart
-                              waves={evidence.availableWaves}
-                              countryCount={evidence.countryCount}
-                              dark
-                            />
-                          </div>
-                        )}
+                      {(evidence.timeline?.length ?? 0) === 0 && (
+                        <div style={{ marginTop: 16 }}>
+                          <CoverageChart
+                            waves={evidence.availableWaves}
+                            countryCount={evidence.countryCount}
+                            dark
+                          />
+                        </div>
+                      )}
                       <p className="insight-board-evidence-text">
                         {evidence.insight}
                       </p>
