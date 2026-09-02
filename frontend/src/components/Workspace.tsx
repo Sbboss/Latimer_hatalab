@@ -198,8 +198,10 @@ export function Workspace({
                         >
                           <div className="model-card-face model-card-front">
                             <div className="model-score-meta">
-                              <span>{model.model}</span>
-                              <span>{model.overallScore.toFixed(2)}</span>
+                              <span className="model-score-name">{model.model}</span>
+                              <span className="model-score-value">
+                                {model.overallScore.toFixed(2)}
+                              </span>
                             </div>
                             <div className="model-score-subtitle">
                               {model.result.highlights.length} trigger phrase{model.result.highlights.length === 1 ? "" : "s"}
@@ -215,8 +217,10 @@ export function Workspace({
 
                           <div className="model-card-face model-card-back">
                             <div className="model-score-meta">
-                              <span>Category breakdown</span>
-                              <span>{model.overallScore.toFixed(2)}</span>
+                              <span className="model-score-name">Category breakdown</span>
+                              <span className="model-score-value">
+                                {model.overallScore.toFixed(2)}
+                              </span>
                             </div>
                             <div className="model-card-back-list">
                               {model.categories.map((category) => (
