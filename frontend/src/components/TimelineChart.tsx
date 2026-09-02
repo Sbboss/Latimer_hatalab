@@ -1,9 +1,12 @@
+import { useId } from "react";
+
 import type { TimelinePoint } from "../lib/types";
 
 type Props = {
   data: TimelinePoint[];
   height?: number;
   showAxis?: boolean;
+  dark?: boolean;
 };
 
 const W = 600;
@@ -31,8 +34,17 @@ function buildSmoothPath(points: { x: number; y: number }[]): string {
   return d.join(" ");
 }
 
-export function TimelineChart({ data, height = 140, showAxis = true }: Props) {
+export function TimelineChart({
+  data,
+  height = 140,
+  showAxis = true,
+  dark = false,
+}: Props) {
   if (!data.length) return null;
+  const gradientIdBase = useId().replace(/:/g, "-");
+  const lightFillId = `${gradientIdBase}-timeline-fill`;
+  const darkFillId = `${gradientIdBase}-timeline-fill-dark`;
+  const activeFillId = dark ? darkFillId : lightFillId;
 
   const padX = 8;
   const padTop = 14;
@@ -68,11 +80,11 @@ export function TimelineChart({ data, height = 140, showAxis = true }: Props) {
       aria-label="Public attitude over time"
     >
       <defs>
-        <linearGradient id="timeline-fill" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={lightFillId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#B56A42" stopOpacity="0.22" />
           <stop offset="100%" stopColor="#B56A42" stopOpacity="0" />
         </linearGradient>
-        <linearGradient id="timeline-fill-dark" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={darkFillId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#D4A373" stopOpacity="0.32" />
           <stop offset="100%" stopColor="#D4A373" stopOpacity="0" />
         </linearGradient>
@@ -85,7 +97,11 @@ export function TimelineChart({ data, height = 140, showAxis = true }: Props) {
         })}
       </g>
 
-      <path d={areaPath} className="timeline-area" />
+      <path
+        d={areaPath}
+        className="timeline-area"
+        style={{ fill: `url(#${activeFillId})` }}
+      />
       <path d={linePath} className="timeline-line" />
 
       {points.map((p, i) => (
