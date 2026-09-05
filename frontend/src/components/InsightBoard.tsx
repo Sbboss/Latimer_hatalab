@@ -24,18 +24,10 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
       >
         <div className="insight-board-head">
           <div>
-            <div className="insight-board-eyebrow">Insight Board status</div>
-            <h2 className="insight-board-phrase">No bias signals detected.</h2>
-            <p
-              style={{
-                marginTop: 12,
-                color: "rgba(247, 240, 230, 0.7)",
-                fontSize: 16,
-                maxWidth: 560,
-              }}
-            >
-              Edit the text on the left with a phrase such as “surprisingly
-              articulate” or “strong cultural fit” to populate the Insight Board.
+            <div className="insight-board-eyebrow">Analysis complete</div>
+            <h2 className="insight-board-phrase">No material bias signals found.</h2>
+            <p className="insight-board-text insight-board-empty-copy">
+              This analysis found no language pattern strong enough to highlight.
             </p>
           </div>
         </div>
@@ -53,19 +45,22 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
   const modelsWithPhrase = models
     .map((m, idx) => ({ model: m, index: idx }))
     .filter(({ model }) => (model.result.highlights?.length ?? 0) > 0);
-  const evidenceBySurvey = groupEvidenceBySurvey(highlight.evidence, 2);
+  const evidenceBySurvey = groupEvidenceBySurvey(highlight.evidence, 1);
   const evidenceCount = SURVEY_ORDER.reduce(
     (count, survey) => count + evidenceBySurvey[survey].length,
     0
   );
-  const evidenceItems = [0, 1]
-    .flatMap((rank) =>
-      SURVEY_ORDER.map((survey) => ({
-        survey,
-        evidence: evidenceBySurvey[survey][rank],
-      }))
-    )
+  const evidenceItems = SURVEY_ORDER
+    .map((survey) => ({ survey, evidence: evidenceBySurvey[survey][0] }))
     .filter(({ evidence }) => Boolean(evidence));
+  const allEvidenceBySurvey = groupEvidenceBySurvey(
+    highlight.evidence,
+    Number.MAX_SAFE_INTEGER
+  );
+  const allEvidenceCount = SURVEY_ORDER.reduce(
+    (count, survey) => count + allEvidenceBySurvey[survey].length,
+    0
+  );
 
   return (
     <div
@@ -105,10 +100,6 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
               <span className="chip-dot" style={{ color: "var(--accent-warm)" }} />
               {highlight.category}
             </span>
-            <a href="#social-evidence" className="chip chip-ink chip-link">
-              {evidenceCount} balanced survey question
-              {evidenceCount === 1 ? "" : "s"}
-            </a>
           </div>
         </div>
 
@@ -169,16 +160,10 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
             )}
           </div>
 
-          <div className="insight-board-block" id="insight-board-evidence">
+          {evidenceCount > 0 && <div className="insight-board-block" id="insight-board-evidence">
             <div className="insight-board-h">
-              Balanced survey evidence
+              Survey context
             </div>
-            {evidenceCount > 1 && (
-              <div className="insight-evidence-scroll-hint">
-                <span>Explore all {evidenceCount} retrieved questions</span>
-                <span aria-hidden>↓</span>
-              </div>
-            )}
             {evidenceItems.map(({ survey, evidence }, index) => {
               if (!evidence) return null;
               return (
@@ -219,21 +204,26 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
                         countryCount={evidence.countryCount}
                         dark
                         responseOptionCount={evidence.responseOptionCount}
+                        responseOptions={evidence.responseOptions}
                       />
                     </div>
                   )}
                 </article>
               );
             })}
-            {evidenceCount === 0 && (
-              <p className="insight-board-text">
-                No directly aligned survey question was retrieved. The evidence
-                boundary stays visible instead of adding a tangential source.
-              </p>
-            )}
-          </div>
+          </div>}
         </div>
       </div>
+      {evidenceCount > 0 && (
+        <a className="insight-continuation" href="#social-evidence">
+          <span>
+            {allEvidenceCount > evidenceCount
+              ? "Continue to more survey questions"
+              : "View full survey evidence"}
+          </span>
+          <span aria-hidden>↓</span>
+        </a>
+      )}
     </div>
   );
 }

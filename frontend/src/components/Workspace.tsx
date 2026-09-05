@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { AnalysisResult, ModelAnalysis } from "../lib/types";
 import { HighlightedText } from "./HighlightedText";
 import { Check, Pencil, Reload, Sparkle } from "./Icons";
@@ -22,7 +22,6 @@ type Props = {
   isAnalyzing: boolean;
   analysisProgress: number;
   analysisState: "idle" | "running" | "complete";
-  apiSource: "live" | "mock" | "unknown";
   analysisStatusText: string;
   linkError: string | null;
   sourceLabel: string | null;
@@ -46,13 +45,11 @@ export function Workspace({
   isAnalyzing,
   analysisProgress,
   analysisState,
-  apiSource,
   analysisStatusText,
   linkError,
   sourceLabel,
 }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null);
-  const [flippedModels, setFlippedModels] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     if (mode === "editing") {
@@ -60,21 +57,13 @@ export function Workspace({
     }
   }, [mode]);
 
-  const toggleFlip = (index: number) =>
-    setFlippedModels((prev) => ({
-      ...prev,
-      [index]: !prev[index],
-    }));
-
   return (
     <section className="section" id="workspace">
       <div className="container">
         <div className="workspace-intro workspace-intro-compact">
           <div>
-            <span className="section-eyebrow">01 · Live workspace</span>
-            <h2 className="section-heading">
-              Paste a sentence. Compare every model’s bias readout.
-            </h2>
+            <h2 className="section-heading">Analyze writing</h2>
+            <p className="section-caption">Paste text or a public URL.</p>
           </div>
         </div>
 
@@ -84,6 +73,9 @@ export function Workspace({
             }`}
           >
             <div className="editor-head">
+              <label className="editor-input-label" htmlFor="analysis-input">
+                Text or public URL
+              </label>
               <div className="editor-actions">
                 {mode === "analyzed" ? (
                   <button
@@ -172,11 +164,12 @@ export function Workspace({
                   />
                 ) : (
                   <textarea
+                    id="analysis-input"
                     ref={taRef}
                     className="editor-textarea"
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
-                    placeholder="Paste a sentence or paragraph to analyze for hidden assumptions…"
+                    placeholder="Paste text or a public URL"
                   />
                 )}
               </div>
@@ -185,16 +178,12 @@ export function Workspace({
                 <div className="score-panel">
                   <div className="score-panel-head">
                     <div className="score-panel-heading-copy">
-                      <span className="section-eyebrow">LLM scorebook</span>
                       <div className="score-panel-title-row">
-                        <h3 className="score-panel-title">Model scores</h3>
+                        <h3 className="score-panel-title">Model perspectives</h3>
                         <span className="score-panel-count">
                           {modelResults.length} of {availableModelCount}
                         </span>
                       </div>
-                      <span className="score-panel-hint">
-                        Select a card to inspect its category breakdown.
-                      </span>
                     </div>
                     {canAnalyzeMore && (
                       <button
@@ -209,20 +198,16 @@ export function Workspace({
 
                   <div className="score-panel-list">
                     {modelResults.map((model, index) => {
-                      const flipped = flippedModels[index] === true;
                       const level = biasLevel(model.overallScore);
 
                       return (
                         <button
                           key={model.model}
                           type="button"
-                          className={`model-score-card ${index === activeModelIndex ? "is-active" : ""} ${flipped ? "is-flipped" : ""}`}
-                          onClick={() => {
-                            onModelSelect(index);
-                            toggleFlip(index);
-                          }}
+                          className={`model-score-card ${index === activeModelIndex ? "is-active" : ""}`}
+                          onClick={() => onModelSelect(index)}
                         >
-                          <div className="model-card-face model-card-front">
+                          <div className="model-card-face">
                             <div className="model-score-meta">
                               <span className="model-score-name">{model.model}</span>
                               <span className="model-score-value">
@@ -234,50 +219,12 @@ export function Workspace({
                               {model.result.highlights.length} trigger phrase{model.result.highlights.length === 1 ? "" : "s"}
                             </div>
                           </div>
-
-                          <div className="model-card-face model-card-back">
-                            <div className="model-score-meta">
-                              <span className="model-score-name">Category breakdown</span>
-                              <span className="model-score-value">
-                                {model.overallScore.toFixed(2)}
-                              </span>
-                            </div>
-                            <span className="model-score-level">{level.label}</span>
-                            <div className="model-card-back-list">
-                              {model.categories.map((category) => (
-                                <div key={`${model.model}-back-${category.category}`} className="category-detail-row">
-                                  <span>{category.category}</span>
-                                  <span>{Math.round(category.score * 100)}%</span>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="model-card-back-hint">Tap again to hide breakdown.</div>
-                          </div>
                         </button>
                       );
                     })}
                   </div>
                 </div>
               </aside>
-            </div>
-
-
-
-            <div className="editor-foot">
-              <span>
-                {mode === "analyzed"
-                  ? `${analysis.highlights.length} highlighted phrase${
-                      analysis.highlights.length === 1 ? "" : "s"
-                    } · click any to inspect`
-                  : `${inputText.length} characters · ready to analyze`}
-              </span>
-              <span>
-                {apiSource === "live"
-                  ? "Connected · live signals"
-                  : apiSource === "mock"
-                  ? "Curated dataset"
-                  : "Initializing"}
-              </span>
             </div>
           </div>
       </div>

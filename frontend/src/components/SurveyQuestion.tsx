@@ -63,6 +63,7 @@ export function SurveyQuestion({ evidence, as = "h3", dark = false }: Props) {
               <p>Source dataset: {evidence.sourceDataset}</p>
             )}
             {evidence.recordId && <p>Record: {evidence.recordId}</p>}
+            {evidence.limitations && <p>Research note: {evidence.limitations}</p>}
           </div>
         </details>
       )}

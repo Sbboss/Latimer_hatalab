@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Footer } from "./components/Footer";
+import { About } from "./components/About";
 import { Hero } from "./components/Hero";
-import { HowItWorks } from "./components/HowItWorks";
 import { InsightBoard } from "./components/InsightBoard";
 import { Nav } from "./components/Nav";
 import { SocialEvidence } from "./components/SocialEvidence";
@@ -23,7 +23,9 @@ export default function App() {
     initialModels[0]?.result.highlights[0]?.id ?? null
   );
   const [apiStatus, setApiStatus] = useState<ApiStatus>("unknown");
-  const [apiSource, setApiSource] = useState<ApiStatus>("unknown");
+  const [view, setView] = useState<"home" | "about">(
+    () => (window.location.hash === "#about" ? "about" : "home")
+  );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisState, setAnalysisState] = useState<
@@ -38,7 +40,6 @@ export default function App() {
   const completionResetRef = useRef<number | null>(null);
 
   const workspaceRef = useRef<HTMLDivElement>(null);
-  const evidenceRef = useRef<HTMLDivElement>(null);
   const insightBoardRef = useRef<HTMLElement>(null);
 
   const activeModel = analysisModels[activeModelIndex] ?? analysisModels[0];
@@ -72,7 +73,7 @@ export default function App() {
       setApiStatus(ok ? "live" : "mock");
 
       if (ok) {
-        const { models, source } = await analyzeText(SAMPLE_TEXT, {
+        const { models } = await analyzeText(SAMPLE_TEXT, {
           preferLive: true,
           modelNames: catalog.models,
           selectedModels: catalog.defaultModels,
@@ -83,7 +84,6 @@ export default function App() {
           setActiveModelIndex(0);
           setSelectedId(models[0]?.result.highlights[0]?.id ?? null);
         }
-        setApiSource(source);
       } else {
         // API is unreachable: replace the hardcoded placeholder models with
         // mock analysis using the *actually configured* model names.
@@ -91,7 +91,6 @@ export default function App() {
         setAnalysisModels(models);
         setActiveModelIndex(0);
         setSelectedId(models[0]?.result.highlights[0]?.id ?? null);
-        setApiSource("mock");
       }
     })();
 
@@ -99,6 +98,14 @@ export default function App() {
       cancelled = true;
       ctrl.abort();
     };
+  }, []);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setView(window.location.hash === "#about" ? "about" : "home");
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
   useEffect(() => {
@@ -196,7 +203,7 @@ export default function App() {
         setSourceLabel(null);
       }
       setAnalysisStatusText(runAllModels ? "Comparing all available models" : "Comparing primary models");
-      const { models, source } = await analyzeText(textForAnalysis, {
+      const { models } = await analyzeText(textForAnalysis, {
         preferLive: apiStatus === "live",
         modelNames: modelNames ?? undefined,
         selectedModels: runAllModels ? modelNames ?? undefined : defaultModelNames ?? undefined,
@@ -206,7 +213,6 @@ export default function App() {
         setActiveModelIndex(0);
         setSelectedId(models[0]?.result.highlights[0]?.id ?? null);
       }
-      setApiSource(source);
       setMode("analyzed");
       setAnalysisProgress(100);
       setAnalysisState("complete");
@@ -222,38 +228,6 @@ export default function App() {
 
   function scrollToWorkspace() {
     workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  function scrollToEvidence() {
-    const target = evidenceRef.current;
-    if (!target) return;
-
-    const targetRect = target.getBoundingClientRect();
-    const absoluteTargetTop = window.scrollY + targetRect.top;
-    const desiredScrollY = absoluteTargetTop - 88;
-    const maxScrollY = document.documentElement.scrollHeight - window.innerHeight;
-    const clampedTargetY = Math.max(0, Math.min(desiredScrollY, Math.max(0, maxScrollY)));
-
-    const startY = window.scrollY;
-    const distance = clampedTargetY - startY;
-    const durationMs = 1200;
-    const startTime = performance.now();
-
-    const easeInOutCubic = (t: number) =>
-      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-    const step = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(1, elapsed / durationMs);
-      const eased = easeInOutCubic(progress);
-      window.scrollTo(0, startY + distance * eased);
-
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      }
-    };
-
-    requestAnimationFrame(step);
   }
 
   function scrollToInsightBoard() {
@@ -276,12 +250,36 @@ export default function App() {
     requestAnimationFrame(scrollToInsightBoard);
   }
 
+  function openAbout() {
+    window.location.hash = "about";
+    setView("about");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function openHome(target = "top") {
+    window.location.hash = target;
+    setView("home");
+    requestAnimationFrame(() => {
+      document.getElementById(target)?.scrollIntoView({ behavior: "smooth" });
+    });
+  }
+
   return (
     <>
-      <Nav apiStatus={apiStatus} onOpenWorkspace={scrollToWorkspace} />
+      <Nav
+        view={view}
+        hasEvidence={activeEvidence.length > 0}
+        onOpenAbout={openAbout}
+        onOpenHome={openHome}
+      />
 
+      {view === "about" ? (
+        <main>
+          <About onStart={() => openHome("workspace")} />
+        </main>
+      ) : (
       <main>
-        <Hero onAnalyze={scrollToWorkspace} onExploreEvidence={scrollToEvidence} />
+        <Hero onAnalyze={scrollToWorkspace} />
 
         <div ref={workspaceRef}>
           <Workspace
@@ -302,7 +300,6 @@ export default function App() {
             isAnalyzing={isAnalyzing}
             analysisProgress={analysisProgress}
             analysisState={analysisState}
-            apiSource={apiSource}
             analysisStatusText={analysisStatusText}
             linkError={linkError}
             sourceLabel={sourceLabel}
@@ -319,9 +316,8 @@ export default function App() {
           <div className="container">
             <header className="section-intro">
               <div>
-                <span className="section-eyebrow">02 · Insight Board</span>
                 <h2 className="section-heading" id="insight-board-title">
-                  Understand the signal before changing the words.
+                  Understand before you rewrite.
                 </h2>
               </div>
             </header>
@@ -335,12 +331,9 @@ export default function App() {
           </div>
         </section>
 
-        <div ref={evidenceRef}>
-          <SocialEvidence evidence={activeEvidence} />
-        </div>
-
-        <HowItWorks />
+        <SocialEvidence evidence={activeEvidence} />
       </main>
+      )}
 
       <Footer />
     </>

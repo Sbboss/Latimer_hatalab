@@ -39,6 +39,27 @@ class ApiEvidenceTests(unittest.TestCase):
         self.assertEqual(evidence["insight"], "")
         self.assertEqual(evidence["availableWaves"], ["1994", "2002", "2012"])
 
+    def test_issp_evidence_exposes_the_full_compact_response_scale(self):
+        options = [
+            "Strongly agree",
+            "Agree",
+            "Neither agree nor disagree",
+            "Disagree",
+            "Strongly disagree",
+        ]
+        evidence = _document_to_evidence(
+            {
+                "id": "ISSP_HEALTH_001",
+                "question_text": "Health damaging behaviour causes health problems",
+                "categories": ["Health and Health Care"],
+                "source_survey": "ISSP",
+                "response_options": options,
+            }
+        )
+
+        self.assertEqual(evidence["responseOptionCount"], 5)
+        self.assertEqual(evidence["responseOptions"], options)
+
     def test_technical_issp_question_has_plain_language_and_original(self):
         original = "Father's occupation when R was (14-15-16): ILO, ISCO 1988 4-digit"
         evidence = _document_to_evidence(

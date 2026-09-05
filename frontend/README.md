@@ -32,13 +32,13 @@ On load the app calls `GET /api/health` once.
 - If the analysis service responds, all subsequent analyses go through
   `POST /api/analyze` and the nav chip reads "Connected · live signals".
 - Otherwise the app silently falls back to a local analyzer over the same
-  curated dataset and the nav chip reads "Demo mode · curated data".
+  curated dataset while keeping infrastructure state out of the interface.
 
 The fallback path lives in `src/data/mockAnalysis.ts` and produces
 output that is byte-shape identical to the live service's response. The
 rest of the app does not know which path served the data.
 
-The dev server proxies `/api/*` to `http://localhost:8000` (see
+The dev server proxies `/api/*` to `http://localhost:8001` (see
 `vite.config.ts`).
 
 ## Layout
@@ -58,32 +58,32 @@ src/
 │   ├── modelOrder.ts          # stable GPT/Claude/DeepSeek/Llama order
 │   └── segments.ts            # text → highlighted-segment renderer
 └── components/
-    ├── Nav.tsx                # sticky nav + live/demo status chip
-    ├── Hero.tsx               # headline, copy, preview card, timeline mini
+    ├── About.tsx              # Ray Fouché and HAT Lab product philosophy
+    ├── Nav.tsx                # compact sticky navigation
+    ├── Hero.tsx               # headline, copy, and reflective signal preview
     ├── Workspace.tsx          # editor card + dashboard card
     ├── HighlightedText.tsx    # interactive highlights (click → Insight Board)
     ├── Dashboard.tsx          # signal strength, dimensions, stats
-    ├── CoverageChart.tsx      # ISSP wave/country coverage visualization
+    ├── CoverageChart.tsx      # ISSP measurement and response-scale profile
     ├── InsightBoard.tsx       # selected signal explanation + rewrite
     ├── DimensionsBars.tsx     # horizontal bias-dimension bars
     ├── TimelineChart.tsx      # SVG public-attitude timeline
-    ├── SocialEvidence.tsx     # two GSS + two ISSP evidence slots
+    ├── SocialEvidence.tsx     # up to two real GSS + two real ISSP questions
     ├── SurveyQuestion.tsx     # plain wording + expandable original source
-    ├── HowItWorks.tsx         # 4-step method strip
+    ├── HowItWorks.tsx         # legacy method component, excluded from the homepage
     ├── Footer.tsx
     └── Icons.tsx
 ```
 
 ## Design system
 
-- Palette (Ivory Research):
-  - Background `#F7F0E6`
-  - Ink `#102033`
-  - Accent `#B56A42`
-- Typography: IBM Plex Sans (400 / 500 / 600 / 700, plus italic 400 / 500)
-  and JetBrains Mono for small labels. No serif display face.
+- Palette: neutral system surfaces with ink `#17191F` and a restrained
+  slate-blue accent `#596B9F`.
+- Typography: the native system sans-serif stack, with SF Pro on Apple
+  platforms and platform-appropriate fallbacks elsewhere.
 - All styles live in `src/styles/globals.css`. There is no CSS framework.
-- All charts (signal strength, dimensions bars, response timelines, and survey-coverage timelines) are inline SVG.
+- Response timelines use inline SVG. Records without response percentages
+  use a factual measurement profile instead of a decorative chart.
 - Model cards stay in one horizontal, scrollable comparison row.
 - User-triggered analysis shows in-place progress and visual/audio completion feedback without moving the page.
 - Technical ISSP wording is simplified for the primary view while the original survey text and source identifiers remain available on demand.

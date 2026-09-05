@@ -3,70 +3,52 @@ type Props = {
   countryCount?: number | null;
   dark?: boolean;
   responseOptionCount?: number;
+  responseOptions?: string[];
 };
 
-export function CoverageChart({ waves = [], countryCount, dark = false, responseOptionCount = 0 }: Props) {
+export function CoverageChart({
+  waves = [],
+  countryCount,
+  dark = false,
+  responseOptionCount = 0,
+  responseOptions = [],
+}: Props) {
   const displayWaves = waves.filter(Boolean);
-  const pointCount = Math.max(displayWaves.length, 1);
-  const startX = 24;
-  const endX = 336;
-  const pointX = (index: number) =>
-    pointCount === 1
-      ? (startX + endX) / 2
-      : startX + (index / (pointCount - 1)) * (endX - startX);
-  const waveLabel = `${displayWaves.length} survey wave${
-    displayWaves.length === 1 ? "" : "s"
-  }`;
-  const countryLabel =
-    typeof countryCount === "number"
-      ? `${countryCount} countr${countryCount === 1 ? "y" : "ies"}`
-      : "Country count unavailable";
   const spanLabel = displayWaves.length > 1
     ? `${displayWaves[0]}–${displayWaves[displayWaves.length - 1]}`
     : displayWaves[0] || "Year unavailable";
-  const optionLabel = responseOptionCount
-    ? `${responseOptionCount} response categories`
-    : "Response categories unavailable";
-  const ariaLabel = `Research scope: ${waveLabel}, ${countryLabel}, ${optionLabel}.`;
+  const compactOptions = responseOptions
+    .map((option) => option.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+  const showsScale = responseOptionCount > 0 && responseOptionCount <= 8 && compactOptions.length > 0;
 
   return (
     <div
-      className={`coverage-chart${dark ? " coverage-chart-dark" : ""}`}
-      role="img"
-      aria-label={ariaLabel}
+      className={`measurement-profile${dark ? " measurement-profile-dark" : ""}`}
+      aria-label="Survey question design"
     >
-      <div className="coverage-chart-head">
-        <strong>Research scope</strong>
-        <span>Question metadata</span>
-      </div>
-      <svg viewBox="0 0 360 78" aria-hidden>
-        <line x1={startX} x2={endX} y1="32" y2="32" />
-        {(displayWaves.length ? displayWaves : ["Coverage"]).map((wave, index) => {
-          const x = pointX(index);
-          const showLabel =
-            displayWaves.length <= 5 ||
-            index === 0 ||
-            index === displayWaves.length - 1;
-          return (
-            <g key={`${wave}-${index}`}>
-              <circle cx={x} cy="32" r="5" />
-              {showLabel && (
-                <text x={x} y="61" textAnchor="middle">
-                  {wave}
-                </text>
-              )}
-            </g>
-          );
-        })}
-      </svg>
-      <div className="coverage-chart-foot">
+      <div className="measurement-profile-head">
+        <strong>How this question was measured</strong>
         <span>{spanLabel}</span>
-        <span>{countryLabel}</span>
       </div>
-      <div className="coverage-chart-stats">
-        <span><strong>{displayWaves.length}</strong> waves</span>
-        <span><strong>{typeof countryCount === "number" ? countryCount : "—"}</strong> countries</span>
-        <span><strong>{responseOptionCount || "—"}</strong> response categories</span>
+      <div className="measurement-facts">
+        <div><span>Survey waves</span><strong>{displayWaves.length || "—"}</strong></div>
+        <div><span>Countries</span><strong>{typeof countryCount === "number" ? countryCount : "—"}</strong></div>
+      </div>
+      <div className="measurement-scale">
+        <span>Response scale</span>
+        {showsScale ? (
+          <ol>
+            {compactOptions.map((option, index) => <li key={`${option}-${index}`}>{option}</li>)}
+          </ol>
+        ) : (
+          <p>
+            {responseOptionCount > 8
+              ? `${responseOptionCount} coded response categories`
+              : "Response labels unavailable in this record"}
+          </p>
+        )}
       </div>
     </div>
   );

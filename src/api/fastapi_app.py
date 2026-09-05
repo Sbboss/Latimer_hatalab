@@ -327,7 +327,7 @@ def _document_to_evidence(document: dict) -> dict:
         "uncertain": bool(document.get("annotation_uncertain")),
         "limitations": document.get("limitations"),
         "responseOptionCount": response_option_count,
-        "responseOptions": response_options[:3],
+        "responseOptions": response_options[:8],
     }
 
 

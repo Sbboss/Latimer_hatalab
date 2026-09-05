@@ -11,14 +11,18 @@ type Props = {
 
 export function SocialEvidence({ evidence }: Props) {
   const evidenceItems = evidence ?? featuredEvidence;
+  if (evidenceItems.length === 0) return null;
+
   const evidenceBySurvey = groupEvidenceBySurvey(evidenceItems, 2);
-  const evidenceSlots = [0, 1].flatMap((rank) =>
+  const balancedEvidence = [0, 1].flatMap((rank) =>
     SURVEY_ORDER.map((survey) => ({
       survey,
       evidence: evidenceBySurvey[survey][rank],
       rank,
     }))
-  );
+  ).filter(({ evidence: item }) => Boolean(item));
+
+  if (balancedEvidence.length === 0) return null;
 
   return (
     <section
@@ -29,51 +33,20 @@ export function SocialEvidence({ evidence }: Props) {
       <div className="container">
         <header className="section-intro">
           <div>
-            <span className="section-eyebrow">03 · Social evidence</span>
             <h2 className="section-heading" id="social-evidence-title">
-              Survey questions behind each signal.
+              More questions behind this signal.
             </h2>
           </div>
-          <p className="section-lede section-lede-compact">
-            Response shares appear when percentages exist. Research scope cards
-            show the reach of each other survey record.
-          </p>
         </header>
 
-        <div className="evidence-scroll-hint" aria-hidden="true">
-          <span>More survey questions below</span><span>↓</span>
-        </div>
         <div className="evidence-grid" aria-label="GSS and ISSP survey questions">
-          {evidenceSlots.map(({ survey, evidence: ev, rank }) => {
-            if (!ev) {
-              return (
-                <article
-                  className="evidence-card card evidence-card-missing"
-                  key={`${survey}-${rank}-missing`}
-                >
-                  <div className="evidence-meta-tags">
-                    <span className="chip chip-accent">{survey}</span>
-                    <span className="chip chip-accent">
-                      Evidence boundary
-                    </span>
-                  </div>
-                  <h3 className="evidence-q">
-                    No directly aligned {survey} question was retrieved.
-                  </h3>
-                  <p className="evidence-insight">
-                    This reserved source slot stays explicit instead of being
-                    filled with a tangential question from another survey.
-                  </p>
-                </article>
-              );
-            }
+          {balancedEvidence.map(({ survey, evidence: ev, rank }) => {
+            if (!ev) return null;
 
             const timeline = ev.timeline ?? [];
             const hasTimeline = timeline.length > 0;
             const first = timeline[0]!;
             const last = timeline[timeline.length - 1]!;
-            const delta = hasTimeline ? last.support - first.support : 0;
-            const deltaDisplay = `${delta > 0 ? "+" : ""}${delta.toFixed(2)}`;
             return (
               <article
                 className="evidence-card card"
@@ -108,17 +81,9 @@ export function SocialEvidence({ evidence }: Props) {
                       waves={ev.availableWaves}
                       countryCount={ev.countryCount}
                       responseOptionCount={ev.responseOptionCount}
+                      responseOptions={ev.responseOptions}
                     />
                   )}
-                </div>
-
-                <div className="evidence-foot">
-                  <span>{hasTimeline ? "Observed response change" : "Research scope"}</span>
-                  <span>
-                    {hasTimeline
-                      ? `${deltaDisplay} pts`
-                      : `${ev.availableWaves?.length ?? 0} waves`}
-                  </span>
                 </div>
               </article>
             );
