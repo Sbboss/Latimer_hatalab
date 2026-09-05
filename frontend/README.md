@@ -122,8 +122,8 @@ human-facing label in the frontend (do not surface the raw key).
 
 ## Reference files
 
-- `palette.html` — static color-system reference.
-- `font-test.html` — typography exploration.
+- `palette.html`: static color-system reference.
+- `font-test.html`: typography exploration.
 
 Both live at the root of `frontend/`. Vite does not serve them by default;
 open them directly in the browser if needed.

@@ -102,6 +102,25 @@ class FrontendProductContractTests(unittest.TestCase):
         self.assertNotIn("See the assumptions", hero)
         self.assertNotIn("before you rewrite it", hero)
 
+    def test_frontend_copy_avoids_forbidden_ai_label_and_em_dash(self):
+        files = [
+            path
+            for path in Path("frontend").rglob("*")
+            if path.is_file()
+            and "node_modules" not in path.parts
+            and "dist" not in path.parts
+            and path.suffix in {".html", ".md", ".ts", ".tsx", ".css"}
+        ]
+        violations = []
+        forbidden_label = re.compile(r"\bai\b", re.IGNORECASE)
+
+        for path in files:
+            source = path.read_text(encoding="utf-8")
+            if forbidden_label.search(source) or "\u2014" in source:
+                violations.append(str(path))
+
+        self.assertEqual(violations, [])
+
     def test_decorative_coverage_timeline_is_replaced_by_measurement_profile(self):
         coverage = (FRONTEND_SOURCE / "components/CoverageChart.tsx").read_text(encoding="utf-8")
         self.assertNotIn("<svg", coverage)

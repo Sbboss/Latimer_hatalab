@@ -14,9 +14,9 @@ export function Hero({ onAnalyze }: Props) {
           </h1>
 
           <p className="hero-sub">
-            AI can rewrite a sentence without making its writer less biased. Bias
+            A model can rewrite a sentence without making its writer less biased. Bias
             Intelligence connects language to decades of social research so we can
-            understand difference—and carry that understanding beyond the screen.
+            understand difference and carry that understanding beyond the screen.
           </p>
 
           <div className="hero-cta">

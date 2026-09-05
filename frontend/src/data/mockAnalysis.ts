@@ -69,7 +69,7 @@ const glossary: GlossaryEntry[] = [
     category: "Economic background",
     score: 0.67,
     explanation:
-      "Framing a background as “nontraditional” centers an unstated default — usually a particular class, schooling, or career path. It can encode socioeconomic assumptions about who belongs.",
+      "Framing a background as “nontraditional” centers an unstated default, usually a particular class, schooling, or career path. It can encode socioeconomic assumptions about who belongs.",
     replacement: "brings experience from a different professional path",
     rewriteReason:
       "Names the actual difference (path or experience) without implying that one path is the standard one.",
@@ -104,7 +104,7 @@ const glossary: GlossaryEntry[] = [
     category: "Economic background",
     score: 0.71,
     explanation:
-      "“Cultural fit” often substitutes for unstated similarity — to schooling, hobbies, or social class. Without explicit criteria it tends to reproduce the demographics already in the room.",
+      "“Cultural fit” often substitutes for unstated similarity in schooling, hobbies, or social class. Without explicit criteria it tends to reproduce the demographics already in the room.",
     replacement: "aligned with how this team collaborates and gives feedback",
     rewriteReason:
       "Replaces an opaque vibe judgment with concrete, observable collaboration behaviors that can be evaluated fairly.",
@@ -141,7 +141,7 @@ const glossary: GlossaryEntry[] = [
     category: "Gender expectations",
     score: 0.78,
     explanation:
-      "Phrases like “leadership material” often package a stereotype about how leaders look, sound, or carry themselves — assumptions that disproportionately filter out women and other groups.",
+      "Phrases like “leadership material” often package assumptions about how leaders look, sound, or carry themselves. Those assumptions disproportionately filter out women and other groups.",
     replacement: "still developing the strategic experience this role calls for",
     rewriteReason:
       "Names the specific developmental gap rather than an inherent trait, which is both fairer and more actionable feedback.",
@@ -377,7 +377,7 @@ export const mockAnalysis: AnalysisResult = mockAnalyze(SAMPLE_TEXT);
 
 // ---------------------------------------------------------------------------
 // Standalone evidence cards used in the social-evidence section.
-// These are independent of any specific highlight — they're a public-facing
+// These are independent of any specific highlight. They are a public-facing
 // research showcase.
 // ---------------------------------------------------------------------------
 export const featuredEvidence: EvidenceQuestion[] = [

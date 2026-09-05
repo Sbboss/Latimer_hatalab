@@ -33,8 +33,8 @@ export function CoverageChart({
         <span>{spanLabel}</span>
       </div>
       <div className="measurement-facts">
-        <div><span>Survey waves</span><strong>{displayWaves.length || "—"}</strong></div>
-        <div><span>Countries</span><strong>{typeof countryCount === "number" ? countryCount : "—"}</strong></div>
+        <div><span>Survey waves</span><strong>{displayWaves.length || "N/A"}</strong></div>
+        <div><span>Countries</span><strong>{typeof countryCount === "number" ? countryCount : "N/A"}</strong></div>
       </div>
       <div className="measurement-scale">
         <span>Response scale</span>
