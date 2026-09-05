@@ -164,8 +164,9 @@ export default function App() {
     });
   }
 
-  async function handleAnalyze(runAllModels = false) {
+  async function handleAnalyze(scope: "primary" | "all") {
     if (isAnalyzing) return;
+    const runAllModels = scope === "all";
     prepareCompletionAudio();
     if (completionResetRef.current !== null) {
       window.clearTimeout(completionResetRef.current);
@@ -277,7 +278,7 @@ export default function App() {
 
   return (
     <>
-      <Nav apiStatus={apiStatus} onTryDemo={scrollToWorkspace} />
+      <Nav apiStatus={apiStatus} onOpenWorkspace={scrollToWorkspace} />
 
       <main>
         <Hero onAnalyze={scrollToWorkspace} onExploreEvidence={scrollToEvidence} />
@@ -294,9 +295,10 @@ export default function App() {
             setMode={setMode}
             selectedId={selectedId}
             onSelect={handleHighlightSelect}
-            onAnalyze={handleAnalyze}
-            onAnalyzeMore={() => handleAnalyze(true)}
+            onAnalyze={() => handleAnalyze("primary")}
+            onAnalyzeMore={() => handleAnalyze("all")}
             canAnalyzeMore={(modelNames?.length ?? 0) > analysisModels.length}
+            availableModelCount={modelNames?.length ?? analysisModels.length}
             isAnalyzing={isAnalyzing}
             analysisProgress={analysisProgress}
             analysisState={analysisState}

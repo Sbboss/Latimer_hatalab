@@ -3,15 +3,15 @@ import { ArrowRight } from "./Icons";
 
 type Props = {
   apiStatus: ApiStatus;
-  onTryDemo: () => void;
+  onOpenWorkspace: () => void;
 };
 
-export function Nav({ apiStatus, onTryDemo }: Props) {
+export function Nav({ apiStatus, onOpenWorkspace }: Props) {
   const statusText =
     apiStatus === "live"
       ? "Connected · live signals"
       : apiStatus === "mock"
-      ? "Demo mode · curated data"
+      ? "Curated dataset · offline"
       : "Initializing";
 
   return (
@@ -34,8 +34,8 @@ export function Nav({ apiStatus, onTryDemo }: Props) {
             <span className="pulse" aria-hidden />
             {statusText}
           </span>
-          <button className="btn btn-quiet" onClick={onTryDemo}>
-            Try the demo <ArrowRight size={14} />
+          <button className="btn btn-quiet" onClick={onOpenWorkspace}>
+            Open workspace <ArrowRight size={14} />
           </button>
         </div>
       </div>

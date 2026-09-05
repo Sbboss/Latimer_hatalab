@@ -89,7 +89,7 @@ export function Dashboard({ analysis, apiSource }: Props) {
           {apiSource === "live"
             ? "Source · Live"
             : apiSource === "mock"
-            ? "Source · Curated demo"
+            ? "Source · Curated dataset"
             : "Source · Pending"}
         </span>
       </div>

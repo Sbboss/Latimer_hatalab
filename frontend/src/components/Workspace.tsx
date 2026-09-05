@@ -18,6 +18,7 @@ type Props = {
   onAnalyze: () => void;
   onAnalyzeMore: () => void;
   canAnalyzeMore: boolean;
+  availableModelCount: number;
   isAnalyzing: boolean;
   analysisProgress: number;
   analysisState: "idle" | "running" | "complete";
@@ -41,6 +42,7 @@ export function Workspace({
   onAnalyze,
   onAnalyzeMore,
   canAnalyzeMore,
+  availableModelCount,
   isAnalyzing,
   analysisProgress,
   analysisState,
@@ -57,8 +59,6 @@ export function Workspace({
       taRef.current?.focus();
     }
   }, [mode]);
-
-  const activeModel = modelResults[activeModelIndex] ?? modelResults[0];
 
   const toggleFlip = (index: number) =>
     setFlippedModels((prev) => ({
@@ -84,15 +84,6 @@ export function Workspace({
             }`}
           >
             <div className="editor-head">
-              <div>
-                <span className="editor-title">
-                  {mode === "analyzed" ? "Analyzed document" : "Draft document"}
-                </span>
-                <div className="model-badge-row">
-                  <span className="chip chip-accent">Active model: {activeModel.model}</span>
-                </div>
-              </div>
-
               <div className="editor-actions">
                 {mode === "analyzed" ? (
                   <button
@@ -130,15 +121,6 @@ export function Workspace({
                     </>
                   )}
                 </button>
-                {canAnalyzeMore && (
-                  <button
-                    className="btn btn-quiet"
-                    onClick={onAnalyzeMore}
-                    disabled={isAnalyzing}
-                  >
-                    Compare more models
-                  </button>
-                )}
               </div>
             </div>
 
@@ -202,9 +184,27 @@ export function Workspace({
               <aside className="editor-scores">
                 <div className="score-panel">
                   <div className="score-panel-head">
-                    <span className="section-eyebrow">LLM scorebook</span>
-                    <h3 className="score-panel-title">All model scores</h3>
-                    <span className="score-panel-hint">Scroll sideways to compare</span>
+                    <div className="score-panel-heading-copy">
+                      <span className="section-eyebrow">LLM scorebook</span>
+                      <div className="score-panel-title-row">
+                        <h3 className="score-panel-title">Model scores</h3>
+                        <span className="score-panel-count">
+                          {modelResults.length} of {availableModelCount}
+                        </span>
+                      </div>
+                      <span className="score-panel-hint">
+                        Select a card to inspect its category breakdown.
+                      </span>
+                    </div>
+                    {canAnalyzeMore && (
+                      <button
+                        className="btn score-expand-button"
+                        onClick={onAnalyzeMore}
+                        disabled={isAnalyzing}
+                      >
+                        <Sparkle size={14} /> Compare more models
+                      </button>
+                    )}
                   </div>
 
                   <div className="score-panel-list">
@@ -275,7 +275,7 @@ export function Workspace({
                 {apiSource === "live"
                   ? "Connected · live signals"
                   : apiSource === "mock"
-                  ? "Curated demo data"
+                  ? "Curated dataset"
                   : "Initializing"}
               </span>
             </div>

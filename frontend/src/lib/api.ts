@@ -60,7 +60,9 @@ export async function analyzeText(
     }
   }
   return {
-    models: orderModelAnalyses(mockAnalyzeModels(text, opts.modelNames)),
+    models: orderModelAnalyses(
+      mockAnalyzeModels(text, opts.selectedModels ?? opts.modelNames)
+    ),
     source: "mock",
   };
 }

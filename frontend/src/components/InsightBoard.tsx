@@ -53,11 +53,19 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
   const modelsWithPhrase = models
     .map((m, idx) => ({ model: m, index: idx }))
     .filter(({ model }) => (model.result.highlights?.length ?? 0) > 0);
-  const evidenceBySurvey = groupEvidenceBySurvey(highlight.evidence, 1);
+  const evidenceBySurvey = groupEvidenceBySurvey(highlight.evidence, 2);
   const evidenceCount = SURVEY_ORDER.reduce(
     (count, survey) => count + evidenceBySurvey[survey].length,
     0
   );
+  const evidenceItems = [0, 1]
+    .flatMap((rank) =>
+      SURVEY_ORDER.map((survey) => ({
+        survey,
+        evidence: evidenceBySurvey[survey][rank],
+      }))
+    )
+    .filter(({ evidence }) => Boolean(evidence));
 
   return (
     <div
@@ -165,11 +173,17 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
             <div className="insight-board-h">
               Balanced survey evidence
             </div>
-            {SURVEY_ORDER.map((survey, index) => {
-              const evidence = evidenceBySurvey[survey][0];
+            {evidenceCount > 1 && (
+              <div className="insight-evidence-scroll-hint">
+                <span>Explore all {evidenceCount} retrieved questions</span>
+                <span aria-hidden>↓</span>
+              </div>
+            )}
+            {evidenceItems.map(({ survey, evidence }, index) => {
+              if (!evidence) return null;
               return (
                 <article
-                  key={evidence?.recordId ?? `${survey}-missing`}
+                  key={evidence.recordId ?? `${survey}-${index}`}
                   style={{
                     marginTop: 16,
                     paddingTop: index ? 18 : 0,
@@ -180,47 +194,43 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
                 >
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
                     <span className="chip chip-ink">{survey}</span>
-                    {evidence?.module && (
+                    {evidence.module && (
                       <span className="chip chip-ink">{evidence.module}</span>
                     )}
-                    {evidence?.uncertain && (
+                    {evidence.uncertain && (
                       <span className="chip chip-ink">Annotation uncertain</span>
                     )}
                   </div>
-                  {evidence ? (
-                    <>
-                      <SurveyQuestion evidence={evidence} as="p" dark />
-                      {(evidence.timeline?.length ?? 0) > 0 && (
-                        <div style={{ marginTop: 16 }}>
-                          <TimelineChart
-                            data={evidence.timeline}
-                            height={140}
-                            dark
-                            responseLabel={evidence.timelineResponseLabel}
-                          />
-                        </div>
-                      )}
-                      {(evidence.timeline?.length ?? 0) === 0 && (
-                        <div style={{ marginTop: 16 }}>
-                          <CoverageChart
-                            waves={evidence.availableWaves}
-                            countryCount={evidence.countryCount}
-                            dark
-                            responseOptionCount={evidence.responseOptionCount}
-                          />
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <p className="insight-board-text">
-                      No directly aligned {survey} question was retrieved. This
-                      slot remains explicit instead of being filled with a
-                      tangential source.
-                    </p>
+                  <SurveyQuestion evidence={evidence} as="p" dark />
+                  {(evidence.timeline?.length ?? 0) > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <TimelineChart
+                        data={evidence.timeline}
+                        height={140}
+                        dark
+                        responseLabel={evidence.timelineResponseLabel}
+                      />
+                    </div>
+                  )}
+                  {(evidence.timeline?.length ?? 0) === 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <CoverageChart
+                        waves={evidence.availableWaves}
+                        countryCount={evidence.countryCount}
+                        dark
+                        responseOptionCount={evidence.responseOptionCount}
+                      />
+                    </div>
                   )}
                 </article>
               );
             })}
+            {evidenceCount === 0 && (
+              <p className="insight-board-text">
+                No directly aligned survey question was retrieved. The evidence
+                boundary stays visible instead of adding a tangential source.
+              </p>
+            )}
           </div>
         </div>
       </div>

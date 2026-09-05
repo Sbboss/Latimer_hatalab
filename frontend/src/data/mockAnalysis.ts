@@ -7,7 +7,7 @@ import type {
 } from "../lib/types";
 
 // ---------------------------------------------------------------------------
-// Demo input
+// Curated example input
 // ---------------------------------------------------------------------------
 export const SAMPLE_TEXT =
   "I think Sarah is surprisingly articulate for someone from a nontraditional background. " +
@@ -15,7 +15,7 @@ export const SAMPLE_TEXT =
 
 // ---------------------------------------------------------------------------
 // Phrase glossary used by the mock analyzer.
-// Matches the curated glossary in backend/analysis.py so the demo behaves
+// Matches the curated glossary in backend/analysis.py so offline analysis behaves
 // the same offline as it does against the live API.
 // ---------------------------------------------------------------------------
 type GlossaryEntry = Omit<Highlight, "id" | "start" | "end" | "phrase"> & {
@@ -335,7 +335,7 @@ function aggregateCategoryScores(highlights: Highlight[]): CategoryScore[] {
 }
 
 // Fallback used only if the backend's /api/models list can't be fetched at
-// all (e.g. fully offline demo). Keep this in sync with the default
+// all (e.g. fully offline use). Keep this in sync with the default
 // AZURE_MODEL_DEPLOYMENTS_JSON in .env.example so it never shows a model
 // that isn't actually configured.
 export const DEFAULT_MODEL_NAMES = [

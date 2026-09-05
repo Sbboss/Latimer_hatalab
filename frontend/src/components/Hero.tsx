@@ -28,7 +28,7 @@ export function Hero({ onAnalyze, onExploreEvidence }: Props) {
                 background: "var(--accent)",
               }}
             />
-            Research prototype
+            Evidence-led bias learning
           </span>
 
           <h1>
