@@ -47,7 +47,7 @@ export function Dashboard({ analysis, apiSource }: Props) {
           />
           {analysis.signalLabel}
           <span style={{ color: "var(--ink-4)", marginLeft: 4 }}>
-            · this is a signal strength, not a verdict
+            · this reflects signal strength rather than a verdict
           </span>
         </span>
       </div>

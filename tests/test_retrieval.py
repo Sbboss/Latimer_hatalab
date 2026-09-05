@@ -131,7 +131,7 @@ class RetrievalGroundingTests(unittest.TestCase):
         )
         self.assertIn("Evidence ID: ISSP_REL_V6", prompt)
         self.assertIn("Survey: ISSP", prompt)
-        self.assertIn("No response percentages are present", prompt)
+        self.assertIn("Response percentages are unavailable", prompt)
         self.assertIn("reflection question", prompt)
 
     def test_metrics_use_rank_and_complete_relevant_set(self):

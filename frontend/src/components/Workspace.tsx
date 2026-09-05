@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AnalysisResult, ModelAnalysis } from "../lib/types";
 import { HighlightedText } from "./HighlightedText";
 import { Check, Pencil, Reload, Sparkle } from "./Icons";
+import { biasLevel } from "../lib/biasLevel";
 
 type Props = {
   analysis: AnalysisResult;
@@ -15,10 +16,15 @@ type Props = {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onAnalyze: () => void;
+  onAnalyzeMore: () => void;
+  canAnalyzeMore: boolean;
   isAnalyzing: boolean;
   analysisProgress: number;
   analysisState: "idle" | "running" | "complete";
   apiSource: "live" | "mock" | "unknown";
+  analysisStatusText: string;
+  linkError: string | null;
+  sourceLabel: string | null;
 };
 
 export function Workspace({
@@ -33,10 +39,15 @@ export function Workspace({
   selectedId,
   onSelect,
   onAnalyze,
+  onAnalyzeMore,
+  canAnalyzeMore,
   isAnalyzing,
   analysisProgress,
   analysisState,
   apiSource,
+  analysisStatusText,
+  linkError,
+  sourceLabel,
 }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null);
   const [flippedModels, setFlippedModels] = useState<Record<number, boolean>>({});
@@ -119,6 +130,15 @@ export function Workspace({
                     </>
                   )}
                 </button>
+                {canAnalyzeMore && (
+                  <button
+                    className="btn btn-quiet"
+                    onClick={onAnalyzeMore}
+                    disabled={isAnalyzing}
+                  >
+                    Compare more models
+                  </button>
+                )}
               </div>
             </div>
 
@@ -134,7 +154,7 @@ export function Workspace({
                   <span>
                     {analysisState === "complete"
                       ? "Analysis complete"
-                      : "Comparing configured models"}
+                      : analysisStatusText}
                   </span>
                   <span>{Math.round(analysisProgress)}%</span>
                 </div>
@@ -152,6 +172,11 @@ export function Workspace({
                   />
                 </div>
               </div>
+            )}
+
+            {linkError && <p className="editor-link-error" role="alert">{linkError}</p>}
+            {sourceLabel && (
+              <p className="editor-source-label">Analyzing page text from {sourceLabel}</p>
             )}
 
             <div className="editor-body">
@@ -185,6 +210,7 @@ export function Workspace({
                   <div className="score-panel-list">
                     {modelResults.map((model, index) => {
                       const flipped = flippedModels[index] === true;
+                      const level = biasLevel(model.overallScore);
 
                       return (
                         <button
@@ -203,6 +229,7 @@ export function Workspace({
                                 {model.overallScore.toFixed(2)}
                               </span>
                             </div>
+                            <span className="model-score-level">{level.label}</span>
                             <div className="model-score-subtitle">
                               {model.result.highlights.length} trigger phrase{model.result.highlights.length === 1 ? "" : "s"}
                             </div>
@@ -215,6 +242,7 @@ export function Workspace({
                                 {model.overallScore.toFixed(2)}
                               </span>
                             </div>
+                            <span className="model-score-level">{level.label}</span>
                             <div className="model-card-back-list">
                               {model.categories.map((category) => (
                                 <div key={`${model.model}-back-${category.category}`} className="category-detail-row">

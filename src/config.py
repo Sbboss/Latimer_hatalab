@@ -60,6 +60,17 @@ def ordered_model_names(model_names) -> list[str]:
 	return [name for _, name in sorted(enumerate(names), key=sort_key)]
 
 
+def default_model_names(model_names) -> list[str]:
+	"""Choose the two primary comparison models, with a stable fallback."""
+	ordered = ordered_model_names(model_names)
+	primary = [
+		name
+		for name in ordered
+		if name.strip().lower().startswith(("gpt", "claude"))
+	]
+	return (primary or ordered)[:2]
+
+
 def _load_model_deployments() -> dict[str, str]:
 	"""Load display-name to Azure deployment-name mapping from JSON env, with defaults."""
 	raw = os.getenv("AZURE_MODEL_DEPLOYMENTS_JSON") or os.getenv("AZURE_MODELS_JSON")

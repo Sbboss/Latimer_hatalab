@@ -30,7 +30,7 @@ export function HowItWorks() {
           Built like a research instrument, used like a writing tool.
         </h2>
         <p className="section-lede">
-          Bias Intelligence is not a grammar checker. It is a learning surface:
+          Bias Intelligence goes beyond grammar checking. It is a learning surface:
           every signal is structured, explainable, and connected to attributable
           social-survey questions.
         </p>

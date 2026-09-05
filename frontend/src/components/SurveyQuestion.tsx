@@ -23,7 +23,7 @@ export function coverageSummary(evidence: EvidenceQuestion): string {
   const waves = evidence.availableWaves?.length ?? 0;
   const waveText = waves
     ? `Asked in ${waves} survey wave${waves === 1 ? "" : "s"}`
-    : "Survey waves not supplied";
+    : "Survey waves unavailable";
   const countryText =
     typeof evidence.countryCount === "number"
       ? ` across ${evidence.countryCount} countr${

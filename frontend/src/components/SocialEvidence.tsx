@@ -35,12 +35,15 @@ export function SocialEvidence({ evidence }: Props) {
             </h2>
           </div>
           <p className="section-lede section-lede-compact">
-            Response trends appear only when percentages exist; otherwise we
-            show survey-wave coverage.
+            Response shares appear when percentages exist. Research scope cards
+            show the reach of each other survey record.
           </p>
         </header>
 
-        <div className="evidence-grid" aria-label="Two GSS and two ISSP questions">
+        <div className="evidence-scroll-hint" aria-hidden="true">
+          <span>More survey questions below</span><span>↓</span>
+        </div>
+        <div className="evidence-grid" aria-label="GSS and ISSP survey questions">
           {evidenceSlots.map(({ survey, evidence: ev, rank }) => {
             if (!ev) {
               return (
@@ -94,19 +97,23 @@ export function SocialEvidence({ evidence }: Props) {
 
                 <div className="evidence-chart">
                   {hasTimeline ? (
-                    <TimelineChart data={timeline} height={130} showAxis={false} />
+                    <TimelineChart
+                      data={timeline}
+                      height={130}
+                      showAxis={false}
+                      responseLabel={ev.timelineResponseLabel}
+                    />
                   ) : (
                     <CoverageChart
                       waves={ev.availableWaves}
                       countryCount={ev.countryCount}
+                      responseOptionCount={ev.responseOptionCount}
                     />
                   )}
                 </div>
 
-                <p className="evidence-insight">{ev.insight}</p>
-
                 <div className="evidence-foot">
-                  <span>{hasTimeline ? "Observed response change" : "Question coverage"}</span>
+                  <span>{hasTimeline ? "Observed response change" : "Research scope"}</span>
                   <span>
                     {hasTimeline
                       ? `${deltaDisplay} pts`

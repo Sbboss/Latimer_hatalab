@@ -66,6 +66,12 @@ def extract_timeline_from_document(doc: dict) -> list[dict[str, float]]:
     return timeline
 
 
+def timeline_response_label(doc: dict) -> str | None:
+    """Return the response category represented by a charted time series."""
+    responses_by_year = _parse_responses_by_year(doc.get("responses_by_year"))
+    return _choose_timeline_option(doc.get("response_options") or [], responses_by_year)
+
+
 # --- System instructions for bias detection ---
 SYSTEM_BIAS_PROMPT = """
 You are a bias analysis system. Your task is to analyze a user statement and detect
@@ -84,7 +90,7 @@ Bias scoring rules:
     0.50–0.85 → weak/moderate bias
     >0.85 → strong bias
 
-If no bias is present:
+When no bias is present:
 - overall_bias_score should be < 0.5
 - explain why the text is neutral
 
@@ -98,12 +104,15 @@ For every detected bias category:
   evidentiary link when a retrieved item genuinely addresses the same topic
   or demographic axis as the trigger phrase. If the retrieved evidence is
   only loosely or tangentially related to this specific bias, say so plainly
-  in "grounding" (e.g. "the retrieved GSS items don't directly address this;
+  in "grounding" (e.g. "the retrieved GSS items lack a direct connection here;
   this judgment is based on documented patterns of coded language rather
   than a specific survey item") instead of overstating the connection.
 
 Return ONLY valid JSON. Your entire response must be a single JSON object and nothing else.
-Do not include tags, markdown, backticks, apologies, or explanatory text outside the JSON.
+Avoid the word "not" in user-facing explanation, replacement, grounding, reflection,
+and summary fields. Preserve meaning through direct alternatives such as "lacks",
+"fails to", or "no evidence of". The trigger phrase may preserve the user's exact text.
+Include tags, markdown, backticks, apologies, or explanatory text only inside the JSON.
 Use strict RFC 8259 JSON: double quotes for all keys/strings and NO trailing commas.
 If no bias is detected, return an empty "categories" array.
 
@@ -134,7 +143,7 @@ The output JSON object must include these fields exactly:
 
 # Optional high‑level descriptions of bias categories to guide the model
 BIAS_CATEGORY_SUMMARY = """
-Possible bias domains include (not limited to):
+Possible bias domains include:
 - Race / ethnicity
 - Gender / sexism
 - Immigration / nationality
@@ -250,7 +259,7 @@ def build_retrieval_prompt(user_text: str, retrieved_docs: List[dict]) -> str:
         response_note = (
             "Observed response distributions are present for the listed years."
             if responses
-            else "No response percentages are present; do not infer an opinion trend from wave coverage."
+            else "Response percentages are unavailable; wave coverage describes research scope."
         )
         context_blocks.append(
             f"Evidence ID: {doc.get('id')}\n"

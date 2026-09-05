@@ -13,11 +13,14 @@ export type EvidenceQuestion = {
   category: string; // human-facing label only
   insight: string;
   timeline: TimelinePoint[];
+  timelineResponseLabel?: string | null;
   survey?: string;
   module?: string | null;
   sourceDataset?: string | null;
   availableWaves?: string[];
   countryCount?: number | null;
+  responseOptionCount?: number;
+  responseOptions?: string[];
   annotationStatus?: string | null;
   uncertain?: boolean;
   limitations?: string | null;
@@ -71,6 +74,17 @@ export type ModelAnalysis = {
 
 export type AnalysisResponse = {
   models: ModelAnalysis[];
+};
+
+export type ModelCatalog = {
+  models: string[];
+  defaultModels: string[];
+};
+
+export type ExtractedPage = {
+  url: string;
+  title: string;
+  text: string;
 };
 
 export type ApiStatus = "live" | "mock" | "unknown";

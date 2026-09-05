@@ -9,7 +9,7 @@ export function Footer() {
         <div className="footer-meta">Research prototype · v0.1</div>
         <div style={{ fontSize: 13, color: "var(--ink-3)", maxWidth: 360 }}>
           Bias signals indicate language patterns documented in social science
-          literature. They are not moral judgments of the writer.
+          literature. They never serve as moral judgments of the writer.
         </div>
       </div>
     </footer>

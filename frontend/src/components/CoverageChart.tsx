@@ -2,9 +2,10 @@ type Props = {
   waves?: string[];
   countryCount?: number | null;
   dark?: boolean;
+  responseOptionCount?: number;
 };
 
-export function CoverageChart({ waves = [], countryCount, dark = false }: Props) {
+export function CoverageChart({ waves = [], countryCount, dark = false, responseOptionCount = 0 }: Props) {
   const displayWaves = waves.filter(Boolean);
   const pointCount = Math.max(displayWaves.length, 1);
   const startX = 24;
@@ -20,7 +21,13 @@ export function CoverageChart({ waves = [], countryCount, dark = false }: Props)
     typeof countryCount === "number"
       ? `${countryCount} countr${countryCount === 1 ? "y" : "ies"}`
       : "Country count unavailable";
-  const ariaLabel = `Question coverage: ${waveLabel}, ${countryLabel}. Coverage only, not opinion responses.`;
+  const spanLabel = displayWaves.length > 1
+    ? `${displayWaves[0]}–${displayWaves[displayWaves.length - 1]}`
+    : displayWaves[0] || "Year unavailable";
+  const optionLabel = responseOptionCount
+    ? `${responseOptionCount} response categories`
+    : "Response categories unavailable";
+  const ariaLabel = `Research scope: ${waveLabel}, ${countryLabel}, ${optionLabel}.`;
 
   return (
     <div
@@ -29,8 +36,8 @@ export function CoverageChart({ waves = [], countryCount, dark = false }: Props)
       aria-label={ariaLabel}
     >
       <div className="coverage-chart-head">
-        <strong>Survey coverage</strong>
-        <span>Not an opinion trend</span>
+        <strong>Research scope</strong>
+        <span>Question metadata</span>
       </div>
       <svg viewBox="0 0 360 78" aria-hidden>
         <line x1={startX} x2={endX} y1="32" y2="32" />
@@ -53,8 +60,13 @@ export function CoverageChart({ waves = [], countryCount, dark = false }: Props)
         })}
       </svg>
       <div className="coverage-chart-foot">
-        <span>{waveLabel}</span>
+        <span>{spanLabel}</span>
         <span>{countryLabel}</span>
+      </div>
+      <div className="coverage-chart-stats">
+        <span><strong>{displayWaves.length}</strong> waves</span>
+        <span><strong>{typeof countryCount === "number" ? countryCount : "—"}</strong> countries</span>
+        <span><strong>{responseOptionCount || "—"}</strong> response categories</span>
       </div>
     </div>
   );

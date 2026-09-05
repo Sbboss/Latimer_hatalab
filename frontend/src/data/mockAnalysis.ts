@@ -11,7 +11,7 @@ import type {
 // ---------------------------------------------------------------------------
 export const SAMPLE_TEXT =
   "I think Sarah is surprisingly articulate for someone from a nontraditional background. " +
-  "We need a strong cultural fit on this team, and while she's promising, she's not quite leadership material yet.";
+  "We need a strong cultural fit on this team, and she may need more time to grow into leadership.";
 
 // ---------------------------------------------------------------------------
 // Phrase glossary used by the mock analyzer.
@@ -134,6 +134,7 @@ const glossary: GlossaryEntry[] = [
     patterns: [
       /not quite leadership material/i,
       /not leadership material/i,
+      /need more time to grow into leadership/i,
       /lacks executive presence/i,
       /too soft to lead/i,
     ],

@@ -93,7 +93,7 @@ export function Hero({ onAnalyze, onExploreEvidence }: Props) {
           <p className="preview-quote">
             “The candidate seemed{" "}
             <span className="hl">surprisingly articulate</span> for the role,
-            and may not be quite{" "}
+            and may need more time to grow into{" "}
             <span className="hl">leadership material</span> yet.”
           </p>
 

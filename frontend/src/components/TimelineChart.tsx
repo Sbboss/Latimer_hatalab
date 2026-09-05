@@ -7,6 +7,7 @@ type Props = {
   height?: number;
   showAxis?: boolean;
   dark?: boolean;
+  responseLabel?: string | null;
 };
 
 const W = 600;
@@ -39,6 +40,7 @@ export function TimelineChart({
   height = 140,
   showAxis = true,
   dark = false,
+  responseLabel,
 }: Props) {
   if (!data.length) return null;
   const gradientIdBase = useId().replace(/:/g, "-");
@@ -67,17 +69,28 @@ export function TimelineChart({
   const linePath = buildSmoothPath(points);
   const last = points[points.length - 1];
   const first = points[0];
+  const firstValue = data[0].support;
+  const lastValue = data[data.length - 1].support;
+  const change = lastValue - firstValue;
   const areaPath = `${linePath} L ${last.x} ${height - padBottom} L ${first.x} ${
     height - padBottom
   } Z`;
 
   return (
-    <svg
+    <div className={`timeline-wrap${dark ? " timeline-wrap-dark" : ""}`}>
+      <div className="timeline-summary">
+        <span className="timeline-response-label">{responseLabel || "Selected response"}</span>
+        <div className="timeline-stats">
+          <span><strong>{lastValue.toFixed(1)}%</strong> latest</span>
+          <span><strong>{change >= 0 ? "+" : ""}{change.toFixed(1)} pts</strong> since {data[0].year}</span>
+        </div>
+      </div>
+      <svg
       className="timeline"
       viewBox={`0 0 ${W} ${height}`}
       preserveAspectRatio="none"
       role="img"
-      aria-label="Public attitude over time"
+      aria-label={`Observed response share over time: ${responseLabel || "selected response"}`}
     >
       <defs>
         <linearGradient id={lightFillId} x1="0" y1="0" x2="0" y2="1">
@@ -125,6 +138,7 @@ export function TimelineChart({
           </text>
         </g>
       )}
-    </svg>
+      </svg>
+    </div>
   );
 }

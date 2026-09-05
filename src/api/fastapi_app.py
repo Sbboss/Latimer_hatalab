@@ -10,25 +10,41 @@ from src.llm.azure_openai_client import (
     create_completion,
     openai_client,
 )
-from src.config import AZURE_MODEL_DEPLOYMENTS, AZURE_DEFAULT_MODEL, ordered_model_names
+from src.config import (
+    AZURE_MODEL_DEPLOYMENTS,
+    AZURE_DEFAULT_MODEL,
+    default_model_names,
+    ordered_model_names,
+)
 from src.retrieval.rag import (
     build_retrieval_prompt,
     extract_timeline_from_document,
+    timeline_response_label,
     retrieve_balanced_documents,
     select_evidence_documents,
 )
 import re
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait
 import os
 import time
 import hashlib
 from threading import Lock
+from html.parser import HTMLParser
+from urllib.error import HTTPError, URLError
+from urllib.parse import urljoin, urlparse
+from urllib.request import HTTPRedirectHandler, Request, build_opener
+import ipaddress
+import socket
 
 app = FastAPI(title="Latimer AI Bias Backend")
 
 ANALYZE_RETRIEVAL_CACHE_TTL_SECONDS = int(os.getenv("ANALYZE_RETRIEVAL_CACHE_TTL_SECONDS", "900"))
 ANALYZE_EVIDENCE_POOL_SIZE = int(os.getenv("ANALYZE_EVIDENCE_POOL_SIZE", "32"))
+ANALYZE_MODEL_TIMEOUT_SECONDS = float(os.getenv("ANALYZE_MODEL_TIMEOUT_SECONDS", "45"))
+PAGE_FETCH_TIMEOUT_SECONDS = float(os.getenv("PAGE_FETCH_TIMEOUT_SECONDS", "12"))
+PAGE_FETCH_MAX_BYTES = int(os.getenv("PAGE_FETCH_MAX_BYTES", "2000000"))
+PAGE_FETCH_MAX_CHARACTERS = int(os.getenv("PAGE_FETCH_MAX_CHARACTERS", "24000"))
 _retrieval_cache_lock = Lock()
 _retrieval_cache: dict[str, dict] = {}
 
@@ -98,6 +114,117 @@ class QueryRequest(BaseModel):
     text: str
     top_k: int = 8
     model: str | None = None
+    models: list[str] | None = None
+
+
+class UrlRequest(BaseModel):
+    url: str
+
+
+class _PageTextParser(HTMLParser):
+    """Collect readable text while prioritizing article and main content."""
+
+    def __init__(self):
+        super().__init__()
+        self._skip_depth = 0
+        self._content_depth = 0
+        self._all_parts: list[str] = []
+        self._main_parts: list[str] = []
+        self.title = ""
+        self._in_title = False
+
+    def handle_starttag(self, tag, attrs):
+        tag = tag.lower()
+        if tag in {"script", "style", "noscript", "svg", "nav", "footer", "aside"}:
+            self._skip_depth += 1
+        if tag in {"main", "article"}:
+            self._content_depth += 1
+        if tag == "title":
+            self._in_title = True
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        if tag in {"script", "style", "noscript", "svg", "nav", "footer", "aside"} and self._skip_depth:
+            self._skip_depth -= 1
+        if tag in {"main", "article"} and self._content_depth:
+            self._content_depth -= 1
+        if tag == "title":
+            self._in_title = False
+
+    def handle_data(self, data):
+        if self._skip_depth:
+            return
+        text = " ".join(data.split())
+        if not text:
+            return
+        if self._in_title:
+            self.title = f"{self.title} {text}".strip()
+        self._all_parts.append(text)
+        if self._content_depth:
+            self._main_parts.append(text)
+
+    def text(self) -> str:
+        parts = self._main_parts if len(" ".join(self._main_parts)) >= 240 else self._all_parts
+        return " ".join(parts)
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def _validated_public_url(value: str) -> str:
+    parsed = urlparse(value.strip())
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise HTTPException(status_code=400, detail="Enter a complete public http or https URL.")
+    if parsed.username or parsed.password or parsed.port not in {None, 80, 443}:
+        raise HTTPException(status_code=400, detail="This URL format is unavailable for page analysis.")
+    try:
+        addresses = socket.getaddrinfo(parsed.hostname, None, type=socket.SOCK_STREAM)
+    except socket.gaierror as exc:
+        raise HTTPException(status_code=422, detail="The page host is unavailable.") from exc
+    for address in addresses:
+        ip = ipaddress.ip_address(address[4][0])
+        if not ip.is_global:
+            raise HTTPException(status_code=400, detail="Local or private network addresses are unavailable.")
+    return parsed.geturl()
+
+
+def _fetch_page(url: str) -> dict[str, str]:
+    current_url = _validated_public_url(url)
+    opener = build_opener(_NoRedirect())
+    for _ in range(4):
+        request = Request(current_url, headers={"User-Agent": "LatimerBiasResearch/1.0"})
+        try:
+            response = opener.open(request, timeout=PAGE_FETCH_TIMEOUT_SECONDS)
+        except HTTPError as exc:
+            if exc.code in {301, 302, 303, 307, 308} and exc.headers.get("Location"):
+                current_url = _validated_public_url(urljoin(current_url, exc.headers["Location"]))
+                continue
+            raise HTTPException(status_code=422, detail="This page is unavailable. Check the link and try again.") from exc
+        except (TimeoutError, URLError, OSError) as exc:
+            raise HTTPException(status_code=504, detail="Page retrieval timed out or failed. Please try another link.") from exc
+        with response:
+            content_type = response.headers.get_content_type()
+            if content_type not in {"text/html", "text/plain"}:
+                raise HTTPException(status_code=422, detail="This link provides no readable page text.")
+            raw = response.read(PAGE_FETCH_MAX_BYTES + 1)
+            if len(raw) > PAGE_FETCH_MAX_BYTES:
+                raise HTTPException(status_code=413, detail="This page is too large for one analysis. Paste a shorter excerpt.")
+            charset = response.headers.get_content_charset() or "utf-8"
+            body = raw.decode(charset, errors="replace")
+            if content_type == "text/plain":
+                text = " ".join(body.split())
+                title = ""
+            else:
+                parser = _PageTextParser()
+                parser.feed(body)
+                text = parser.text()
+                title = parser.title
+            if len(text) < 80:
+                raise HTTPException(status_code=422, detail="The page contains too little readable text for analysis.")
+            return {"url": current_url, "title": title, "text": text[:PAGE_FETCH_MAX_CHARACTERS]}
+    raise HTTPException(status_code=422, detail="This link redirected too many times.")
 
 
 def _original_question_text(document: dict) -> str:
@@ -113,14 +240,24 @@ def _original_question_text(document: dict) -> str:
 
 
 def _plain_language_question(document: dict) -> str:
-    """Turn technical ISSP labels into readable questions without changing meaning."""
+    """Turn technical survey labels into readable questions without changing meaning."""
 
     original = _original_question_text(document)
     source_survey = document.get("source_survey") or (
         "ISSP" if str(document.get("id")).startswith("ISSP_") else "GSS"
     )
-    if source_survey != "ISSP" or not original:
+    if not original:
         return original
+
+    if source_survey == "GSS":
+        compact = re.sub(r"\s+", " ", original).strip(" .")
+        if re.search(r"father.?s occupation", compact, flags=re.IGNORECASE):
+            return "What work did the respondent's father do while the respondent was growing up?"
+        if re.search(r"mother.?s occupation", compact, flags=re.IGNORECASE):
+            return "What work did the respondent's mother do while the respondent was growing up?"
+        if compact.endswith(("?", "!")):
+            return compact
+        return f"What does this survey measure: {compact}?"
 
     occupation_match = re.match(
         r"^(Father|Mother)'s occupation when R was \([^)]*\):.*$",
@@ -170,26 +307,17 @@ def _document_to_evidence(document: dict) -> dict:
         end = document.get("year_end")
         waves = [str(start)] if start == end else [str(start), str(end)]
 
-    if timeline:
-        insight = (
-            f"{source_survey} response distributions are available for this question. "
-            "The chart reports the selected response option, not a model estimate."
-        )
-    else:
-        wave_text = f" across {len(waves)} listed waves" if waves else ""
-        insight = (
-            f"This {source_survey} question is available{wave_text}. "
-            "This record contains question metadata, not response percentages, "
-            "so it does not establish an opinion trend."
-        )
+    response_options = document.get("response_options") or []
+    response_option_count = len(response_options)
 
     return {
         "recordId": document.get("id"),
         "question": _plain_language_question(document),
         "originalQuestion": _original_question_text(document),
         "category": ", ".join(document.get("categories") or []),
-        "insight": insight,
+        "insight": "",
         "timeline": timeline,
+        "timelineResponseLabel": timeline_response_label(document),
         "survey": source_survey,
         "module": document.get("module_name"),
         "sourceDataset": document.get("source_dataset"),
@@ -198,6 +326,8 @@ def _document_to_evidence(document: dict) -> dict:
         "annotationStatus": document.get("annotation_status"),
         "uncertain": bool(document.get("annotation_uncertain")),
         "limitations": document.get("limitations"),
+        "responseOptionCount": response_option_count,
+        "responseOptions": response_options[:3],
     }
 
 
@@ -226,7 +356,8 @@ def models():
     """Expose the actual configured model deployments so the frontend never
     hardcodes/guesses model names that may drift from .env configuration."""
     configured = list(AZURE_MODEL_DEPLOYMENTS.keys()) or [AZURE_DEFAULT_MODEL]
-    return {"models": ordered_model_names(configured)}
+    ordered = ordered_model_names(configured)
+    return {"models": ordered, "defaultModels": default_model_names(ordered)}
 
 
 @app.get("/api/models")
@@ -249,7 +380,17 @@ def serve_frontend_root():
     index_file = FRONTEND_DIST_DIR / "index.html"
     if index_file.exists():
         return _index_response()
-    return {"status": "ok", "message": "Frontend build not found. API is running."}
+    return {"status": "ok", "message": "Frontend build unavailable. API is running."}
+
+
+@app.post("/extract-url")
+def extract_url(request: UrlRequest):
+    return _fetch_page(request.url)
+
+
+@app.post("/api/extract-url")
+def extract_url_api(request: UrlRequest):
+    return extract_url(request)
 
 
 @app.get("/{full_path:path}")
@@ -338,8 +479,16 @@ def analyze(request: QueryRequest):
                 "expires_at": now_ts + ANALYZE_RETRIEVAL_CACHE_TTL_SECONDS,
             }
 
-    configured_models = list(AZURE_MODEL_DEPLOYMENTS.keys()) or [AZURE_DEFAULT_MODEL]
-    model_names = ordered_model_names(configured_models)
+    configured_models = ordered_model_names(
+        list(AZURE_MODEL_DEPLOYMENTS.keys()) or [AZURE_DEFAULT_MODEL]
+    )
+    requested_models = request.models or default_model_names(configured_models)
+    unknown_models = [name for name in requested_models if name not in configured_models]
+    if unknown_models:
+        raise HTTPException(status_code=400, detail="One or more selected models are unavailable.")
+    model_names = [name for name in configured_models if name in requested_models]
+    if not model_names:
+        raise HTTPException(status_code=400, detail="Choose at least one available model.")
 
     # Build RAG grounded prompt once (shared across model fan-out)
     prompt = build_retrieval_prompt(text, documents[: request.top_k])
@@ -442,9 +591,8 @@ def analyze(request: QueryRequest):
                 )
             elif model_error == "model_refusal":
                 reasoning_summary = (
-                    "The model itself declined to analyze this input (a Claude safety refusal, not an "
-                    "Azure content filter block — Foundry guardrails aren't yet configurable for Claude "
-                    "deployments). Try another configured model, or rephrase the input."
+                    "The model declined this input through its safety policy. Try another configured model, "
+                    "or rephrase the input."
                 )
             elif model_error == "reasoning_budget_exhausted":
                 reasoning_summary = (
@@ -452,7 +600,7 @@ def analyze(request: QueryRequest):
                     "answer. Try a shorter input, or increase max_tokens for this model."
                 )
             else:
-                reasoning_summary = "Model could not produce an output for this request."
+                reasoning_summary = "This model produced no output for the request."
             categories = []
             bias_score = 0.5
 
@@ -524,12 +672,38 @@ def analyze(request: QueryRequest):
             },
         }
 
-    # Fan out model calls in parallel while keeping output order stable.
+    def timed_out_output(model_name: str) -> dict:
+        return {
+            "model": model_name,
+            "status": "error",
+            "error": "completion_timeout",
+            "overallScore": 0.5,
+            "confidence": 0.0,
+            "categories": [],
+            "thinking": None,
+            "result": {
+                "inputText": text,
+                "overallScore": 0.5,
+                "confidence": 0.0,
+                "signalLabel": "Analysis unavailable",
+                "reasoningSummary": "This model exceeded the analysis time limit. Other results remain available.",
+                "thinking": None,
+                "highlights": [],
+            },
+        }
+
+    # Fan out model calls in parallel while keeping output order stable. A
+    # bounded wait prevents a provider stall from leaving the browser at 92%.
     ordered_outputs: dict[str, dict] = {}
     max_workers = min(8, max(1, len(model_names)))
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    executor = ThreadPoolExecutor(max_workers=max_workers)
+    try:
         future_to_model = {executor.submit(run_model, model_name): model_name for model_name in model_names}
-        for future in as_completed(future_to_model):
+        completed, pending = wait(
+            future_to_model,
+            timeout=ANALYZE_MODEL_TIMEOUT_SECONDS,
+        )
+        for future in completed:
             model_name = future_to_model[future]
             try:
                 ordered_outputs[model_name] = future.result()
@@ -548,11 +722,17 @@ def analyze(request: QueryRequest):
                         "overallScore": 0.5,
                         "confidence": 0.72,
                         "signalLabel": "No signal",
-                        "reasoningSummary": "Model could not produce an output for this request.",
+                        "reasoningSummary": "This model produced no output for the request.",
                         "thinking": None,
                         "highlights": [],
                     },
                 }
+        for future in pending:
+            model_name = future_to_model[future]
+            future.cancel()
+            ordered_outputs[model_name] = timed_out_output(model_name)
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
 
     model_outputs = [ordered_outputs[m] for m in model_names if m in ordered_outputs]
 

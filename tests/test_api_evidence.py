@@ -1,9 +1,12 @@
 import unittest
+import time
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from src.api.fastapi_app import ANALYSIS_OUTPUT_SCHEMA, _document_to_evidence, app
-from src.config import ordered_model_names
+from src.api.fastapi_app import ANALYSIS_OUTPUT_SCHEMA, _PageTextParser, _document_to_evidence, app
+from src.config import default_model_names, ordered_model_names
+from src.llm.azure_openai_client import CompletionResult
 
 
 class ApiEvidenceTests(unittest.TestCase):
@@ -14,7 +17,7 @@ class ApiEvidenceTests(unittest.TestCase):
         self.assertEqual(client.get("/api/health").json(), {"status": "ok"})
         self.assertIn("models", client.get("/api/models").json())
 
-    def test_issp_evidence_does_not_invent_a_response_trend(self):
+    def test_issp_evidence_keeps_response_trends_empty_when_percentages_are_unavailable(self):
         evidence = _document_to_evidence(
             {
                 "id": "ISSP_FAM1994_001",
@@ -33,7 +36,7 @@ class ApiEvidenceTests(unittest.TestCase):
 
         self.assertEqual(evidence["survey"], "ISSP")
         self.assertEqual(evidence["timeline"], [])
-        self.assertIn("not response percentages", evidence["insight"])
+        self.assertEqual(evidence["insight"], "")
         self.assertEqual(evidence["availableWaves"], ["1994", "2002", "2012"])
 
     def test_technical_issp_question_has_plain_language_and_original(self):
@@ -72,6 +75,54 @@ class ApiEvidenceTests(unittest.TestCase):
                 "DeepSeek-V4-Pro",
                 "Llama-3.3-70B-Instruct",
             ],
+        )
+
+    def test_default_models_are_gpt_and_claude(self):
+        self.assertEqual(
+            default_model_names(["DeepSeek-V4-Pro", "Claude-Opus-4.8", "GPT-5.5", "Llama-3.3"]),
+            ["GPT-5.5", "Claude-Opus-4.8"],
+        )
+
+    def test_page_parser_prefers_article_text_and_skips_navigation(self):
+        parser = _PageTextParser()
+        parser.feed("<html><title>Example</title><nav>Navigation words</nav><article><p>" + "Useful research text " * 20 + "</p></article></html>")
+        self.assertEqual(parser.title, "Example")
+        self.assertIn("Useful research text", parser.text())
+        self.assertNotIn("Navigation words", parser.text())
+
+    def test_mental_illness_sentence_returns_primary_model_results(self):
+        payload = '{"overall_bias_score": 0.7, "bias_detected": true, "reasoning_summary": "A claim about a group merits careful evidence.", "categories": []}'
+        with (
+            patch("src.api.fastapi_app.openai_client", return_value=object()),
+            patch("src.api.fastapi_app.create_embedding", return_value=[0.1]),
+            patch("src.api.fastapi_app.retrieve_balanced_documents", return_value=[]),
+            patch("src.api.fastapi_app.create_completion", return_value=CompletionResult(text=payload)),
+        ):
+            response = TestClient(app).post(
+                "/api/analyze",
+                json={"text": "Mental illnesses are not real illnesses."},
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["models"]), 2)
+
+    def test_stalled_model_returns_timeout_result(self):
+        def slow_completion(*_args, **_kwargs):
+            time.sleep(0.05)
+            return CompletionResult(text="{}")
+
+        with (
+            patch("src.api.fastapi_app.openai_client", return_value=object()),
+            patch("src.api.fastapi_app.create_embedding", return_value=[0.2]),
+            patch("src.api.fastapi_app.retrieve_balanced_documents", return_value=[]),
+            patch("src.api.fastapi_app.create_completion", side_effect=slow_completion),
+            patch("src.api.fastapi_app.ANALYZE_MODEL_TIMEOUT_SECONDS", 0.01),
+        ):
+            response = TestClient(app).post(
+                "/api/analyze", json={"text": "A fresh timeout regression case."}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            all(model["error"] == "completion_timeout" for model in response.json()["models"])
         )
 
     def test_issp_statement_is_presented_as_an_agreement_question(self):

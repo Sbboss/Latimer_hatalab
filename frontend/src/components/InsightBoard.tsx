@@ -4,6 +4,7 @@ import { CoverageChart } from "./CoverageChart";
 import { DimensionsBars } from "./DimensionsBars";
 import { SurveyQuestion } from "./SurveyQuestion";
 import { TimelineChart } from "./TimelineChart";
+import { biasLevel } from "../lib/biasLevel";
 
 type Props = {
   highlight: Highlight | null;
@@ -33,9 +34,8 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
                 maxWidth: 560,
               }}
             >
-              Try editing the text on the left to include phrases like
-              “surprisingly articulate”, “strong cultural fit”, or “not quite
-              leadership material” to populate the Insight Board.
+              Edit the text on the left with a phrase such as “surprisingly
+              articulate” or “strong cultural fit” to populate the Insight Board.
             </p>
           </div>
         </div>
@@ -43,7 +43,7 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
     );
   }
 
-  // Show every model that returned a result, not just the ones that
+  // Show every model that returned a result, beyond the ones that
   // flagged the exact same text as the currently active model. Each model
   // picks its own highlight boundaries (whole sentence vs. individual
   // clauses), and clicking a model button switches to that model's own
@@ -108,7 +108,7 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
           <div className="insight-board-strength-num">
             {highlight.score.toFixed(2)}
           </div>
-          <div className="insight-board-strength-label">Bias signal strength</div>
+          <div className="insight-board-strength-label">{biasLevel(highlight.score).label}</div>
         </div>
       </div>
 
@@ -118,7 +118,7 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
             <div className="insight-board-h">What we noticed</div>
             <p className="insight-board-text">
               {highlight.explanation ||
-                "The selected signal did not include an explanation. Try another model or analyze the text again."}
+                "The selected signal has no explanation yet. Try another model or analyze the text again."}
             </p>
           </div>
 
@@ -142,7 +142,7 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
               <div className="rewrite-card replacement">
                 <div className="rewrite-label">Suggested replacement</div>
                 <div className="rewrite-text">
-                  “{highlight.replacement || "No replacement was returned."}”
+                  “{highlight.replacement || "A replacement is unavailable."}”
                 </div>
               </div>
             </div>
@@ -196,6 +196,7 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
                             data={evidence.timeline}
                             height={140}
                             dark
+                            responseLabel={evidence.timelineResponseLabel}
                           />
                         </div>
                       )}
@@ -205,12 +206,10 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
                             waves={evidence.availableWaves}
                             countryCount={evidence.countryCount}
                             dark
+                            responseOptionCount={evidence.responseOptionCount}
                           />
                         </div>
                       )}
-                      <p className="insight-board-evidence-text">
-                        {evidence.insight}
-                      </p>
                     </>
                   ) : (
                     <p className="insight-board-text">

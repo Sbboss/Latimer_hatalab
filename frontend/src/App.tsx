@@ -7,7 +7,7 @@ import { Nav } from "./components/Nav";
 import { SocialEvidence } from "./components/SocialEvidence";
 import { Workspace } from "./components/Workspace";
 import { mockAnalyzeModels, SAMPLE_TEXT } from "./data/mockAnalysis";
-import { analyzeText, fetchModelNames, pingApi } from "./lib/api";
+import { analyzeText, extractPageText, fetchModelCatalog, pingApi } from "./lib/api";
 import { selectBalancedEvidence } from "./lib/evidence";
 import type { ApiStatus, ModelAnalysis } from "./lib/types";
 
@@ -30,6 +30,10 @@ export default function App() {
     "idle" | "running" | "complete"
   >("idle");
   const [modelNames, setModelNames] = useState<string[] | null>(null);
+  const [defaultModelNames, setDefaultModelNames] = useState<string[] | null>(null);
+  const [analysisStatusText, setAnalysisStatusText] = useState("Comparing primary models");
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [sourceLabel, setSourceLabel] = useState<string | null>(null);
   const completionAudioRef = useRef<AudioContext | null>(null);
   const completionResetRef = useRef<number | null>(null);
 
@@ -58,18 +62,20 @@ export default function App() {
     const ctrl = new AbortController();
 
     (async () => {
-      const [ok, names] = await Promise.all([
+      const [ok, catalog] = await Promise.all([
         pingApi(ctrl.signal),
-        fetchModelNames(ctrl.signal),
+        fetchModelCatalog(ctrl.signal),
       ]);
       if (cancelled) return;
-      setModelNames(names);
+      setModelNames(catalog.models);
+      setDefaultModelNames(catalog.defaultModels);
       setApiStatus(ok ? "live" : "mock");
 
       if (ok) {
         const { models, source } = await analyzeText(SAMPLE_TEXT, {
           preferLive: true,
-          modelNames: names,
+          modelNames: catalog.models,
+          selectedModels: catalog.defaultModels,
         });
         if (cancelled) return;
         if (models.length) {
@@ -81,7 +87,7 @@ export default function App() {
       } else {
         // API is unreachable: replace the hardcoded placeholder models with
         // mock analysis using the *actually configured* model names.
-        const models = mockAnalyzeModels(SAMPLE_TEXT, names);
+        const models = mockAnalyzeModels(SAMPLE_TEXT, catalog.defaultModels);
         setAnalysisModels(models);
         setActiveModelIndex(0);
         setSelectedId(models[0]?.result.highlights[0]?.id ?? null);
@@ -158,7 +164,7 @@ export default function App() {
     });
   }
 
-  async function handleAnalyze() {
+  async function handleAnalyze(runAllModels = false) {
     if (isAnalyzing) return;
     prepareCompletionAudio();
     if (completionResetRef.current !== null) {
@@ -167,10 +173,32 @@ export default function App() {
     setIsAnalyzing(true);
     setAnalysisProgress(5);
     setAnalysisState("running");
+    setLinkError(null);
     try {
-      const { models, source } = await analyzeText(inputText, {
+      let textForAnalysis = inputText;
+      const potentialUrl = inputText.trim();
+      if (/^https?:\/\/\S+$/i.test(potentialUrl)) {
+        setAnalysisStatusText("Retrieving page text");
+        try {
+          const page = await extractPageText(potentialUrl);
+          textForAnalysis = page.text;
+          setInputText(page.text);
+          setSourceLabel(page.title || page.url);
+          setAnalysisProgress(24);
+        } catch (error) {
+          setLinkError(error instanceof Error ? error.message : "The page is unavailable for retrieval.");
+          setAnalysisState("idle");
+          setAnalysisProgress(0);
+          return;
+        }
+      } else {
+        setSourceLabel(null);
+      }
+      setAnalysisStatusText(runAllModels ? "Comparing all available models" : "Comparing primary models");
+      const { models, source } = await analyzeText(textForAnalysis, {
         preferLive: apiStatus === "live",
         modelNames: modelNames ?? undefined,
+        selectedModels: runAllModels ? modelNames ?? undefined : defaultModelNames ?? undefined,
       });
       if (models.length) {
         setAnalysisModels(models);
@@ -267,10 +295,15 @@ export default function App() {
             selectedId={selectedId}
             onSelect={handleHighlightSelect}
             onAnalyze={handleAnalyze}
+            onAnalyzeMore={() => handleAnalyze(true)}
+            canAnalyzeMore={(modelNames?.length ?? 0) > analysisModels.length}
             isAnalyzing={isAnalyzing}
             analysisProgress={analysisProgress}
             analysisState={analysisState}
             apiSource={apiSource}
+            analysisStatusText={analysisStatusText}
+            linkError={linkError}
+            sourceLabel={sourceLabel}
           />
 
         </div>
