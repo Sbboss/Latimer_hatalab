@@ -98,6 +98,21 @@ class FrontendProductContractTests(unittest.TestCase):
         self.assertIn("How this question was measured", coverage)
         self.assertIn("Response scale", coverage)
 
+    def test_original_brand_palette_remains_the_interface_foundation(self):
+        styles = (FRONTEND_SOURCE / "styles/globals.css").read_text(encoding="utf-8")
+
+        for token in [
+            "--bg: #f7f0e6",
+            "--bg-warm: #fbf6ed",
+            "--ink: #102033",
+            "--accent: #b56a42",
+            "--accent-warm: #d4a373",
+        ]:
+            self.assertIn(token, styles)
+
+        for replaced_color in ["#f5f5f7", "#596b9f", "#c8d3f5", "#eeeff3"]:
+            self.assertNotIn(replaced_color, styles)
+
 
 if __name__ == "__main__":
     unittest.main()
