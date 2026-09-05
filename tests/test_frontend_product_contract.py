@@ -92,6 +92,16 @@ class FrontendProductContractTests(unittest.TestCase):
         ]:
             self.assertNotIn(phrase, active_sources)
 
+    def test_hero_centers_learning_over_neutral_sounding_output(self):
+        hero = (FRONTEND_SOURCE / "components/Hero.tsx").read_text(encoding="utf-8")
+
+        self.assertIn("Neutral words can leave", hero)
+        self.assertIn("without making its writer less biased", hero)
+        self.assertIn("decades of social research", hero)
+        self.assertIn("beyond the screen", hero)
+        self.assertNotIn("See the assumptions", hero)
+        self.assertNotIn("before you rewrite it", hero)
+
     def test_decorative_coverage_timeline_is_replaced_by_measurement_profile(self):
         coverage = (FRONTEND_SOURCE / "components/CoverageChart.tsx").read_text(encoding="utf-8")
         self.assertNotIn("<svg", coverage)

@@ -10,11 +10,13 @@ export function Hero({ onAnalyze }: Props) {
       <div className="container hero-grid">
         <div>
           <h1>
-            See the assumptions. <em>Change the thinking.</em>
+            Neutral words can leave <em>our assumptions untouched.</em>
           </h1>
 
           <p className="hero-sub">
-            Understand the social assumptions behind language before you rewrite it.
+            AI can rewrite a sentence without making its writer less biased. Bias
+            Intelligence connects language to decades of social research so we can
+            understand difference—and carry that understanding beyond the screen.
           </p>
 
           <div className="hero-cta">
