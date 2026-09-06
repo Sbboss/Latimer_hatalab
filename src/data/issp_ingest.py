@@ -150,6 +150,12 @@ def normalize_issp_zip(zip_path: str | Path) -> tuple[list[dict[str, Any]], dict
                 "year_end": max(years),
                 "response_options": _split_pipe(row.get("response_scale")),
                 "responses_by_year": {},
+                "response_base_by_year": {},
+                "response_data_status": "source_missing",
+                "response_data_source": "",
+                "response_data_doi": "",
+                "response_distribution_method": "",
+                "response_data_missing_waves": waves,
                 "source": "ISSP",
                 "source_survey": "ISSP",
                 "module_name": (row.get("module_name") or "").strip(),
@@ -202,6 +208,41 @@ def write_json(value: Any, path: str | Path) -> None:
     )
 
 
+RESPONSE_DATA_FIELDS = (
+    "responses_by_year",
+    "response_base_by_year",
+    "response_data_status",
+    "response_data_source",
+    "response_data_doi",
+    "response_distribution_method",
+    "response_data_missing_waves",
+)
+
+
+def preserve_response_data(
+    documents: list[dict[str, Any]], existing_path: str | Path
+) -> None:
+    """Keep separately verified distributions when refreshing tagged metadata."""
+
+    path = Path(existing_path)
+    if not path.is_file():
+        return
+    existing = json.loads(path.read_text(encoding="utf-8"))
+    by_id = {item["id"]: item for item in existing}
+    for document in documents:
+        prior = by_id.get(document["id"])
+        if not prior:
+            continue
+        if any(
+            prior.get(field) != document.get(field)
+            for field in ("source_dataset", "source_question", "response_options")
+        ):
+            continue
+        for field in RESPONSE_DATA_FIELDS:
+            if field in prior:
+                document[field] = prior[field]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--zip", required=True, help="Path to the original tagged ISSP ZIP")
@@ -210,6 +251,7 @@ def main() -> None:
     args = parser.parse_args()
 
     documents, report = normalize_issp_zip(args.zip)
+    preserve_response_data(documents, args.output)
     write_json(documents, args.output)
     write_json(report, args.report)
     print(

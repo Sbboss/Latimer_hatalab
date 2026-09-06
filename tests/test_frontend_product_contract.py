@@ -127,6 +127,18 @@ class FrontendProductContractTests(unittest.TestCase):
         self.assertIn("How this question was measured", coverage)
         self.assertIn("Response scale", coverage)
 
+    def test_verified_distributions_use_timelines_and_missing_data_is_explicit(self):
+        social = (FRONTEND_SOURCE / "components/SocialEvidence.tsx").read_text(encoding="utf-8")
+        insight = (FRONTEND_SOURCE / "components/InsightBoard.tsx").read_text(encoding="utf-8")
+        notice = (FRONTEND_SOURCE / "components/ResponseDataNotice.tsx").read_text(encoding="utf-8")
+
+        for source in (social, insight):
+            self.assertIn("<TimelineChart", source)
+            self.assertIn("<ResponseDataNotice", source)
+            self.assertNotIn("CoverageChart", source)
+        self.assertIn("Response distribution unavailable", notice)
+        self.assertIn("No opinion trend is inferred", notice)
+
     def test_original_brand_palette_remains_the_interface_foundation(self):
         styles = (FRONTEND_SOURCE / "styles/globals.css").read_text(encoding="utf-8")
 

@@ -41,6 +41,12 @@ LEGACY_SELECT_FIELDS = [
     "year_end",
     "response_options",
     "responses_by_year",
+    "response_base_by_year",
+    "response_data_status",
+    "response_data_source",
+    "response_data_doi",
+    "response_distribution_method",
+    "response_data_missing_waves",
 ]
 
 METADATA_SELECT_FIELDS = LEGACY_SELECT_FIELDS + [
@@ -122,6 +128,21 @@ def _index_fields() -> list:
             type=SearchFieldDataType.Collection(SearchFieldDataType.String),
         ),
         SimpleField(name="responses_by_year", type=SearchFieldDataType.String),
+        SimpleField(name="response_base_by_year", type=SearchFieldDataType.String),
+        SimpleField(
+            name="response_data_status",
+            type=SearchFieldDataType.String,
+            filterable=True,
+            facetable=True,
+        ),
+        SimpleField(name="response_data_source", type=SearchFieldDataType.String),
+        SimpleField(name="response_data_doi", type=SearchFieldDataType.String),
+        SimpleField(name="response_distribution_method", type=SearchFieldDataType.String),
+        SimpleField(
+            name="response_data_missing_waves",
+            type=SearchFieldDataType.Collection(SearchFieldDataType.String),
+            filterable=True,
+        ),
         SearchableField(name="question_text", type=SearchFieldDataType.String),
         SimpleField(
             name="source_survey",

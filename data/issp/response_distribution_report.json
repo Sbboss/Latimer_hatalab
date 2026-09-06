@@ -1,0 +1,71 @@
+{
+  "available_record_count": 529,
+  "distribution_method": "Equal-country mean of valid-response percentages for each year, with the official GESIS WEIGHT variable applied within each country sample.",
+  "missing_record_count": 0,
+  "missing_record_ids": [],
+  "partial_record_count": 3,
+  "partial_record_ids": [
+    "ISSP_HEALTH_V38",
+    "ISSP_HEALTH_V39",
+    "ISSP_WORK_V57"
+  ],
+  "record_count": 532,
+  "sources": {
+    "ZA4747": {
+      "archive_or_file": "ZA4747_v2-1-0.dta.zip",
+      "doi": "https://doi.org/10.4232/1.14113",
+      "question_count": 71,
+      "sha256": "7510ee432e5ee5adfbc6df0c943c73446b966fe46b97a6f034e92a3025a75968",
+      "version": "2.1.0 (2023-06-30)"
+    },
+    "ZA5960": {
+      "archive_or_file": "ZA5960_v1-0-0.dta.zip",
+      "doi": "https://doi.org/10.4232/1.13471",
+      "question_count": 59,
+      "sha256": "92b0d765119a53ea4355c20d7690e90e213edc98f1ee3748599c310b23617adf",
+      "version": "1.0.0 (2020-06-29)"
+    },
+    "ZA8790": {
+      "archive_or_file": "ZA8790_v1-0-0.dta.zip",
+      "doi": "https://doi.org/10.4232/1.14226",
+      "question_count": 71,
+      "sha256": "30c6745e1650a9fb6f3ceadc2d77712e101fdc149a2cf03cd38a77a3c270c6f5",
+      "version": "1.0.0 (2024-01-18)"
+    },
+    "ZA8792": {
+      "archive_or_file": "ZA8792_v2-0-0.dta.zip",
+      "doi": "https://doi.org/10.4232/1.14482",
+      "question_count": 80,
+      "sha256": "cf0e41cdf457a3e947c48064e871a635cd4163828f0ba504a644ba9234f555db",
+      "version": "2.0.0 (2025-02-10)"
+    },
+    "ZA8793": {
+      "archive_or_file": "ZA8793_v1-1-0.dta.zip",
+      "doi": "https://doi.org/10.4232/1.14767",
+      "question_count": 60,
+      "sha256": "8b91d83a3cdd894b757b535c9414847b037b9adaf895f445fbcb2dbddc1a5786",
+      "version": "1.1.0 (2026-05-21)"
+    },
+    "ZA8794": {
+      "archive_or_file": "ZA8794_v1-0-0.dta.zip",
+      "doi": "https://doi.org/10.4232/1.14438",
+      "question_count": 40,
+      "sha256": "a83e45c87715a737b7b8964c9e511f1a5885ca93032dea5c5ac8fe76703f6c6d",
+      "version": "1.0.0 (2024-12-16)"
+    },
+    "ZA8795": {
+      "archive_or_file": "ZA8795_v1-0-0.dta.zip",
+      "doi": "https://doi.org/10.4232/1.14750",
+      "question_count": 78,
+      "sha256": "988fcfa5b195cc818fdca0593479b0ac5a2a3081e707e09e66f62d706da8ad8e",
+      "version": "1.0.0 (2025-04-15)"
+    },
+    "ZA8797": {
+      "archive_or_file": "ZA8797_v1-0-0.dta.zip",
+      "doi": "https://doi.org/10.4232/1.14391",
+      "question_count": 73,
+      "sha256": "23f7b19f25d137b3f5878f8e77d442f352cb136a185bb6df8bb3eb154cc88208",
+      "version": "1.0.0 (2024-10-07)"
+    }
+  }
+}

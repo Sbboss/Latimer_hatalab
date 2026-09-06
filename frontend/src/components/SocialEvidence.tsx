@@ -1,7 +1,7 @@
 import type { EvidenceQuestion } from "../lib/types";
 import { featuredEvidence } from "../data/mockAnalysis";
 import { groupEvidenceBySurvey, SURVEY_ORDER } from "../lib/evidence";
-import { CoverageChart } from "./CoverageChart";
+import { ResponseDataNotice } from "./ResponseDataNotice";
 import { SurveyQuestion } from "./SurveyQuestion";
 import { TimelineChart } from "./TimelineChart";
 
@@ -77,12 +77,7 @@ export function SocialEvidence({ evidence }: Props) {
                       responseLabel={ev.timelineResponseLabel}
                     />
                   ) : (
-                    <CoverageChart
-                      waves={ev.availableWaves}
-                      countryCount={ev.countryCount}
-                      responseOptionCount={ev.responseOptionCount}
-                      responseOptions={ev.responseOptions}
-                    />
+                    <ResponseDataNotice evidence={ev} />
                   )}
                 </div>
               </article>

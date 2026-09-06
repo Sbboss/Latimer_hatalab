@@ -309,6 +309,12 @@ def _document_to_evidence(document: dict) -> dict:
 
     response_options = document.get("response_options") or []
     response_option_count = len(response_options)
+    response_base = document.get("response_base_by_year") or {}
+    if isinstance(response_base, str):
+        try:
+            response_base = json.loads(response_base)
+        except json.JSONDecodeError:
+            response_base = {}
 
     return {
         "recordId": document.get("id"),
@@ -328,6 +334,12 @@ def _document_to_evidence(document: dict) -> dict:
         "limitations": document.get("limitations"),
         "responseOptionCount": response_option_count,
         "responseOptions": response_options[:8],
+        "responseDataStatus": document.get("response_data_status"),
+        "responseDataSource": document.get("response_data_source"),
+        "responseDataDoi": document.get("response_data_doi"),
+        "responseDistributionMethod": document.get("response_distribution_method"),
+        "responseBaseByYear": response_base,
+        "responseDataMissingWaves": document.get("response_data_missing_waves") or [],
     }
 
 

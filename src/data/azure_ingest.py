@@ -74,6 +74,14 @@ def build_search_document(question: dict, embedding: list[float]) -> dict:
         "year_end": question.get("year_end"),
         "response_options": question.get("response_options", []),
         "responses_by_year": json.dumps(question.get("responses_by_year", {})),
+        "response_base_by_year": json.dumps(question.get("response_base_by_year", {})),
+        "response_data_status": question.get("response_data_status"),
+        "response_data_source": question.get("response_data_source"),
+        "response_data_doi": question.get("response_data_doi"),
+        "response_distribution_method": question.get("response_distribution_method"),
+        "response_data_missing_waves": [
+            str(value) for value in question.get("response_data_missing_waves", [])
+        ],
         "source_survey": question.get("source_survey") or question.get("source"),
         "module_name": question.get("module_name"),
         "source_dataset": question.get("source_dataset"),

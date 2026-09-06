@@ -21,6 +21,16 @@ export type EvidenceQuestion = {
   countryCount?: number | null;
   responseOptionCount?: number;
   responseOptions?: string[];
+  responseDataStatus?: "available" | "partial" | "source_missing" | null;
+  responseDataSource?: string | null;
+  responseDataDoi?: string | null;
+  responseDistributionMethod?: string | null;
+  responseBaseByYear?: Record<string, {
+    country_samples: number;
+    unweighted_valid_responses: number;
+    weighted_valid_responses: number;
+  }>;
+  responseDataMissingWaves?: string[];
   annotationStatus?: string | null;
   uncertain?: boolean;
   limitations?: string | null;

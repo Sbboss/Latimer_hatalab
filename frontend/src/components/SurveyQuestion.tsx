@@ -52,6 +52,11 @@ export function SurveyQuestion({ evidence, as = "h3", dark = false }: Props) {
       <p className={dark ? "insight-board-provenance" : "evidence-summary"}>
         {coverageSummary(evidence)}
       </p>
+      {(evidence.responseDataMissingWaves?.length ?? 0) > 0 && (
+        <p className={`response-data-gap${dark ? " is-dark" : ""}`}>
+          Official response data unavailable for waves: {evidence.responseDataMissingWaves?.join(", ")}.
+        </p>
+      )}
       {showOriginal && (
         <details className={`source-disclosure${dark ? " is-dark" : ""}`}>
           <summary>
@@ -64,6 +69,16 @@ export function SurveyQuestion({ evidence, as = "h3", dark = false }: Props) {
             )}
             {evidence.recordId && <p>Record: {evidence.recordId}</p>}
             {evidence.limitations && <p>Research note: {evidence.limitations}</p>}
+            {evidence.responseDistributionMethod && (
+              <p>Distribution method: {evidence.responseDistributionMethod}</p>
+            )}
+            {evidence.responseDataDoi && (
+              <p>
+                <a href={evidence.responseDataDoi} target="_blank" rel="noreferrer">
+                  Official GESIS source
+                </a>
+              </p>
+            )}
           </div>
         </details>
       )}

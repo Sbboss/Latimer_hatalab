@@ -1,4 +1,5 @@
 import json
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -9,6 +10,7 @@ from src.data.azure_ingest import (
     verify_indexed_documents,
 )
 from src.data.ingest import build_document_text
+from src.data.issp_ingest import preserve_response_data
 
 
 CORPUS_PATH = Path("data/issp/issp_questions_tagged.json")
@@ -82,6 +84,58 @@ class ISSPCanonicalCorpusTests(unittest.TestCase):
         text = build_document_text(document)
         self.assertIn("Available waves:", text)
         self.assertNotIn("public support", text.lower())
+
+    def test_all_questions_have_verified_response_distributions(self):
+        for document in self.documents:
+            with self.subTest(record_id=document["id"]):
+                self.assertTrue(document["responses_by_year"])
+                self.assertIn(document["response_data_status"], {"available", "partial"})
+                self.assertTrue(document["response_data_doi"].startswith("https://doi.org/"))
+                for year, distribution in document["responses_by_year"].items():
+                    self.assertIn(year, document["available_waves"])
+                    self.assertAlmostEqual(100.0, sum(distribution.values()), places=3)
+                    self.assertTrue(all(0 <= share <= 100 for share in distribution.values()))
+                    self.assertGreater(
+                        document["response_base_by_year"][year]["unweighted_valid_responses"],
+                        0,
+                    )
+
+    def test_samples_span_all_official_sources(self):
+        by_source = {}
+        for document in self.documents:
+            by_source.setdefault(document["source_dataset"].split()[0], document)
+        self.assertEqual(
+            {"ZA4747", "ZA5960", "ZA8790", "ZA8792", "ZA8793", "ZA8794", "ZA8795", "ZA8797"},
+            set(by_source),
+        )
+        self.assertTrue(all(item["responses_by_year"] for item in by_source.values()))
+
+    def test_tag_refresh_preserves_verified_response_fields(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "existing.json"
+            path.write_text(
+                json.dumps(
+                    [{
+                        "id": "ISSP_SAMPLE",
+                        "source_dataset": "ZA0000 v1.0.0",
+                        "source_question": "V1",
+                        "response_options": ["1 = Yes"],
+                        "responses_by_year": {"2021": {"1 = Yes": 100.0}},
+                        "response_data_status": "available",
+                    }]
+                ),
+                encoding="utf-8",
+            )
+            refreshed = [{
+                "id": "ISSP_SAMPLE",
+                "source_dataset": "ZA0000 v1.0.0",
+                "source_question": "V1",
+                "response_options": ["1 = Yes"],
+                "responses_by_year": {},
+            }]
+            preserve_response_data(refreshed, path)
+            self.assertEqual({"2021": {"1 = Yes": 100.0}}, refreshed[0]["responses_by_year"])
+            self.assertEqual("available", refreshed[0]["response_data_status"])
 
     @patch("src.storage.azure_vector_store.list_indexed_document_ids")
     def test_live_verification_requires_every_expected_id(self, list_ids):

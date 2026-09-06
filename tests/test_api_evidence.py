@@ -1,3 +1,4 @@
+import json
 import unittest
 import time
 from unittest.mock import patch
@@ -29,6 +30,8 @@ class ApiEvidenceTests(unittest.TestCase):
                 "available_waves": ["1994", "2002", "2012"],
                 "country_count": 37,
                 "responses_by_year": "{}",
+                "response_data_status": "source_missing",
+                "response_data_missing_waves": ["1994", "2002", "2012"],
                 "annotation_status": "labeled",
                 "annotation_uncertain": False,
             }
@@ -38,6 +41,31 @@ class ApiEvidenceTests(unittest.TestCase):
         self.assertEqual(evidence["timeline"], [])
         self.assertEqual(evidence["insight"], "")
         self.assertEqual(evidence["availableWaves"], ["1994", "2002", "2012"])
+        self.assertEqual(evidence["responseDataStatus"], "source_missing")
+        self.assertEqual(evidence["responseDataMissingWaves"], ["1994", "2002", "2012"])
+
+    def test_issp_verified_distribution_becomes_a_timeline(self):
+        evidence = _document_to_evidence(
+            {
+                "id": "ISSP_HEALTH_V10",
+                "source_survey": "ISSP",
+                "question_text": "Health damaging behaviour causes health problems",
+                "response_options": ["1 = Strongly agree", "2 = Agree"],
+                "responses_by_year": json.dumps(
+                    {
+                        "2011": {"1 = Strongly agree": 20.0, "2 = Agree": 80.0},
+                        "2021": {"1 = Strongly agree": 25.0, "2 = Agree": 75.0},
+                    }
+                ),
+                "response_data_status": "available",
+            }
+        )
+
+        self.assertEqual(
+            [{"year": 2011, "support": 20.0}, {"year": 2021, "support": 25.0}],
+            evidence["timeline"],
+        )
+        self.assertEqual("Strongly agree", evidence["timelineResponseLabel"])
 
     def test_issp_evidence_exposes_the_full_compact_response_scale(self):
         options = [

@@ -19,22 +19,22 @@ def _parse_responses_by_year(raw: Any) -> dict[str, dict[str, float]]:
 
 
 def _choose_timeline_option(response_options: list[str] | None, responses_by_year: dict[str, dict[str, float]]) -> str | None:
-    options = [opt.strip().lower() for opt in (response_options or []) if opt]
+    options = [(opt.strip(), opt.strip().lower()) for opt in (response_options or []) if opt]
     positive_keywords = ["yes", "agree", "support", "likely", "approve", "favor", "would vote", "best", "fit", "ok", "acceptable"]
 
     for keyword in positive_keywords:
-        for opt in options:
-            if keyword in opt:
-                return opt
+        for original, normalized in options:
+            if keyword in normalized:
+                return original
 
     if len(options) == 2:
-        for opt in options:
-            if "no" not in opt and "don'" not in opt:
-                return opt
+        for original, normalized in options:
+            if "no" not in normalized and "don'" not in normalized:
+                return original
 
-    for opt in options:
-        if opt:
-            return opt
+    for original, _normalized in options:
+        if original:
+            return original
 
     if responses_by_year:
         sample = next(iter(responses_by_year.values()), {})
@@ -69,7 +69,10 @@ def extract_timeline_from_document(doc: dict) -> list[dict[str, float]]:
 def timeline_response_label(doc: dict) -> str | None:
     """Return the response category represented by a charted time series."""
     responses_by_year = _parse_responses_by_year(doc.get("responses_by_year"))
-    return _choose_timeline_option(doc.get("response_options") or [], responses_by_year)
+    option = _choose_timeline_option(doc.get("response_options") or [], responses_by_year)
+    if option and "=" in option:
+        return option.split("=", 1)[1].strip()
+    return option
 
 
 # --- System instructions for bias detection ---

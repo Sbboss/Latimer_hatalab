@@ -1,6 +1,6 @@
 import type { Highlight, ModelAnalysis } from "../lib/types";
 import { groupEvidenceBySurvey, SURVEY_ORDER } from "../lib/evidence";
-import { CoverageChart } from "./CoverageChart";
+import { ResponseDataNotice } from "./ResponseDataNotice";
 import { DimensionsBars } from "./DimensionsBars";
 import { SurveyQuestion } from "./SurveyQuestion";
 import { TimelineChart } from "./TimelineChart";
@@ -199,13 +199,7 @@ export function InsightBoard({ highlight, models, activeModelIndex, onModelSelec
                   )}
                   {(evidence.timeline?.length ?? 0) === 0 && (
                     <div style={{ marginTop: 16 }}>
-                      <CoverageChart
-                        waves={evidence.availableWaves}
-                        countryCount={evidence.countryCount}
-                        dark
-                        responseOptionCount={evidence.responseOptionCount}
-                        responseOptions={evidence.responseOptions}
-                      />
+                      <ResponseDataNotice evidence={evidence} dark />
                     </div>
                   )}
                 </article>
